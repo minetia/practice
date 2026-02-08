@@ -1,117 +1,89 @@
-/* practice/practice-script.js - 승률/자산합산/추출 최종 수정 */
-let isRunning = false, currentPrice = 0, totalProfit = 0, totalCount = 0, tradeCount = 0, winCount = 0, logs = [];
+/* practice/practice-script.js - 일반 모드 스타일로 간결화 */
+let isRunning = false, currentPrice = 0, totalProfit = 0, tradeCount = 0, winCount = 0, logs = [];
 let wakeLock = null;
 
-window.addEventListener('DOMContentLoaded', () => {
-    // 1. UI 컴포넌트 로드
-    const loadUI = (id, file) => {
+window.addEventListener('load', () => {
+    // 1. 헤더/네비 로드
+    const renderUI = (id, file) => {
         fetch(`https://minetia.github.io/${file}`).then(r => r.text()).then(h => {
             if(document.getElementById(id)) document.getElementById(id).innerHTML = h;
         });
     };
-    loadUI('header-placeholder', 'header.html');
-    loadUI('nav-placeholder', 'nav.html');
+    renderUI('header-placeholder', 'header.html');
+    renderUI('nav-placeholder', 'nav.html');
 
-    // 2. 코인 및 차트 로드
+    // 2. 코인 설정
     const params = new URLSearchParams(window.location.search);
     const coin = params.get('coin') || 'BTC';
     if(document.getElementById('coin-name')) document.getElementById('coin-name').innerText = coin;
 
-    if (window.TradingView) {
-        new TradingView.widget({
-            "container_id": "tv_chart", "symbol": `BINANCE:${coin}USDT`, "interval": "1", 
-            "theme": "dark", "autosize": true, "hide_side_toolbar": true
-        });
-    }
-
-    // 3. 가격 호출
-    const getPrice = async () => {
-        try {
-            const r = await fetch(`https://api.upbit.com/v1/ticker?markets=KRW-${coin}`);
-            const d = await r.json();
-            currentPrice = d[0].trade_price;
-            if(document.getElementById('current-price')) document.getElementById('current-price').innerText = currentPrice.toLocaleString();
-        } catch(e) {}
+    // 3. 초간결 가격 호출
+    const getPrice = () => {
+        fetch(`https://api.upbit.com/v1/ticker?markets=KRW-${coin}`)
+            .then(r => r.json())
+            .then(d => {
+                currentPrice = d[0].trade_price;
+                if(document.getElementById('current-price')) 
+                    document.getElementById('current-price').innerText = currentPrice.toLocaleString();
+            }).catch(() => {});
         setTimeout(getPrice, 1000);
     };
     getPrice();
 });
 
-// [AI 시작]
+// [AI 시작/중지] - 일반 모드처럼 직관적으로 묶음
 window.startAi = async function() {
     if(isRunning || currentPrice === 0) return;
     isRunning = true;
     
-    // 화면 유지
+    // 버튼 상태 즉시 고정
+    const btnS = document.getElementById('btn-start');
+    const btnT = document.getElementById('btn-stop');
+    if(btnS) { btnS.disabled = true; btnS.style.background = '#334155'; }
+    if(btnT) { btnT.disabled = false; btnT.style.background = '#ef4444'; }
+    if(document.getElementById('bet-amount')) document.getElementById('bet-amount').disabled = true;
+
     try { if(navigator.wakeLock) wakeLock = await navigator.wakeLock.request('screen'); } catch(e){}
 
-    document.getElementById('btn-start').disabled = true;
-    document.getElementById('btn-start').style.background = '#334155';
-    document.getElementById('btn-stop').disabled = false;
-    document.getElementById('btn-stop').style.background = '#ef4444';
-    document.getElementById('bet-amount').disabled = true;
-
-    const loop = () => {
+    const tradeLoop = () => {
         if(!isRunning) return;
 
+        // 베팅 계산
         const bet = Number(document.getElementById('bet-amount').value.replace(/,/g, '')) || 50000000;
-        const isWin = Math.random() < 0.58; // 실제 타겟 승률
-        const percent = (Math.random() * 0.007) + 0.004;
-        const profit = isWin ? Math.floor(bet * percent) : -Math.floor(bet * (percent * 0.9));
+        const isWin = Math.random() < 0.58; 
+        const profit = isWin ? Math.floor(bet * 0.006) : -Math.floor(bet * 0.004);
         
-        // [수정 핵심] 데이터 누적
         totalProfit += profit;
         tradeCount++;
         if(profit > 0) winCount++;
-        totalCount += Math.floor(Math.random() * 300) + 100;
         
-        // 로그 기록
-        const logData = {
-            time: new Date().toLocaleTimeString('ko-KR', {hour12: false}),
-            type: Math.random() > 0.5 ? "AI 롱" : "AI 숏",
-            price: currentPrice + (Math.random() * 20 - 10),
-            profit: profit
-        };
-        logs.unshift(logData);
-        if(logs.length > 50) logs.pop();
+        // 로그 기록 (추출용 최소 데이터)
+        logs.unshift({ time: new Date().toLocaleTimeString().split(' ')[1], type: isWin ? "롱" : "숏", profit });
+        if(logs.length > 20) logs.pop();
 
-        // --- [화면 갱신 - 형님이 지적하신 부분들] ---
+        // 화면 갱신 (일반 모드처럼 깔끔하게)
+        if(document.getElementById('win-rate')) 
+            document.getElementById('win-rate').innerText = ((winCount/tradeCount)*100).toFixed(1) + "%";
         
-        // 1. 수집 데이터 건수
-        if(document.getElementById('data-count')) document.getElementById('data-count').innerText = totalCount.toLocaleString();
-        
-        // 2. 승률 계산 (winCount / tradeCount 강제 계산)
-        if(document.getElementById('win-rate')) {
-            const rate = ((winCount / tradeCount) * 100).toFixed(1);
-            document.getElementById('win-rate').innerText = rate + "%";
-            document.getElementById('win-rate').style.color = rate >= 50 ? "#f59e0b" : "#94a3b8";
-        }
-        
-        // 3. 평가 자산 (원금 + 누적수익 합산 표시)
-        if(document.getElementById('live-asset')) {
-            const finalAsset = bet + totalProfit;
-            document.getElementById('live-asset').innerText = finalAsset.toLocaleString() + " KRW";
-            document.getElementById('live-asset').style.color = totalProfit >= 0 ? '#3b82f6' : '#ef4444';
-        }
-        
-        // 4. 매매 로그 리스트 출력
+        if(document.getElementById('live-asset')) 
+            document.getElementById('live-asset').innerText = (bet + totalProfit).toLocaleString() + " KRW";
+
+        // 매매일지 - 일반 모드 스타일로 간결하게 출력
         const logList = document.getElementById('log-list');
         if(logList) {
             logList.innerHTML = logs.map(l => `
                 <tr style="border-bottom:1px solid #1e293b;">
-                    <td style="padding:12px; color:#94a3b8; font-size:0.75rem;">${l.time}</td>
-                    <td style="padding:12px; font-weight:bold; color:${l.type.includes('롱')?'#10b981':'#ef4444'}">${l.type}</td>
-                    <td style="padding:12px; font-size:0.85rem;">${l.price.toLocaleString(undefined, {maximumFractionDigits:0})}</td>
-                    <td style="padding:12px; font-weight:bold; color:${l.profit>0?'#10b981':'#ef4444'}">
+                    <td style="padding:10px; color:#94a3b8;">${l.time}</td>
+                    <td style="padding:10px; font-weight:bold;">AI ${l.type}</td>
+                    <td style="padding:10px; text-align:right; color:${l.profit>0?'#10b981':'#ef4444'}; font-weight:bold;">
                         ${l.profit > 0 ? '+' : ''}${l.profit.toLocaleString()}
                     </td>
                 </tr>
             `).join('');
         }
-        
-        setTimeout(loop, 1500);
+        setTimeout(tradeLoop, 1500);
     };
-    loop();
+    tradeLoop();
 };
 
 window.stopAi = function() {
@@ -124,16 +96,15 @@ window.stopAi = function() {
     document.getElementById('bet-amount').disabled = false;
 };
 
-// [추출 버튼 - 100% 작동 보장]
+// [데이터 추출] - 필요한 정보만 딱 묶어서 다운로드
 window.downloadPlusLog = function() {
-    if(logs.length === 0) { alert("데이터가 없습니다."); return; }
-    let csv = "\uFEFF시간,포지션,체결가,수익\n";
-    logs.forEach(l => {
-        csv += `${l.time},${l.type},${l.price.toFixed(0)},${l.profit}\n`;
-    });
+    if(logs.length === 0) return alert("추출할 데이터가 없습니다.");
+    let csv = "\uFEFF시간,포지션,수익\n";
+    logs.forEach(l => { csv += `${l.time},${l.type},${l.profit}\n`; });
+    
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = `Mining_Data_${new Date().getTime()}.csv`;
+    a.download = `AI_Log_${new Date().getTime()}.csv`;
     a.click();
 };
