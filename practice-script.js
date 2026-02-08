@@ -27,9 +27,9 @@ window.addEventListener('load', () => {
     getPrice();
 });
 
-// 검색 기능 복구
-window.searchCoin = function() {
-    const val = document.getElementById('coin-search').value.toUpperCase();
+// 플러스 모드 전용 검색 기능
+window.plusSearch = function() {
+    const val = document.getElementById('plus-coin-search').value.toUpperCase();
     if(val) location.href = `index.html?coin=${val}`;
 };
 
@@ -58,7 +58,6 @@ window.startAi = function() {
         });
         if(logs.length > 20) logs.pop();
 
-        // 실시간 수치 갱신
         document.getElementById('data-count').innerText = (tradeCount * 412).toLocaleString() + "건";
         document.getElementById('win-rate').innerText = ((winCount/tradeCount)*100).toFixed(1) + "%";
         document.getElementById('live-asset').innerText = (bet + totalProfit).toLocaleString();
