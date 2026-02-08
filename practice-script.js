@@ -1,4 +1,4 @@
-/* practice/practice-script.js (승률 계산 기능 추가됨) */
+/* practice/practice-script.js (최종: 화면 꺼짐 방지 + 강력 복구) */
 const ROOT_URL = "https://minetia.github.io/";
 
 let isRunning = false;
@@ -9,15 +9,19 @@ let tradeLogs = [];
 let totalDataCount = 0; 
 let totalProfit = 0;
 
-// [NEW] 승률 계산용 변수
-let realTradeCount = 0; // 실제 매매 횟수 (데이터 뻥튀기 제외)
-let realWinCount = 0;   // 승리 횟수
+// 승률 통계
+let realTradeCount = 0;
+let realWinCount = 0;
+
+// [핵심] 화면 꺼짐 방지용 변수
+let wakeLock = null;
 
 window.onload = async () => {
     await includeResources([
         { id: 'header-placeholder', file: 'header.html' },
         { id: 'nav-placeholder', file: 'nav.html' }
     ]);
+    
     const params = new URLSearchParams(window.location.search);
     const coin = params.get('coin') || 'BTC';
     const symbol = params.get('symbol') || 'BINANCE:BTCUSDT';
@@ -27,13 +31,25 @@ window.onload = async () => {
 
     new TradingView.widget({ "container_id": "tv_chart", "symbol": symbol, "interval": "1", "theme": "dark", "autosize": true, "toolbar_bg": "#0f172a", "hide_side_toolbar": true, "save_image": false });
 
+    // 검색 기능 연결
     const searchInput = document.getElementById('header-search-input');
     if(searchInput) {
         searchInput.onkeyup = function(e) { if(e.key === 'Enter') searchCoin(); };
     }
 
+    // 상태 불러오기
     loadState(); 
+    
+    // 가격 가져오기 시작
     fetchPriceLoop(coin);
+
+    // [중요] 페이지가 다시 보일 때(탭 전환 후 복귀) 복구 로직 실행
+    document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === 'visible' && isRunning) {
+            recoverTimeGap();
+            requestWakeLock(); // 화면 유지 다시 요청
+        }
+    });
 };
 
 async function includeResources(targets) {
@@ -47,10 +63,26 @@ async function fetchPriceLoop(coin) {
         const res = await axios.get(`https://api.upbit.com/v1/ticker?markets=KRW-${coin}`);
         if(res.data && res.data.length > 0) {
             currentPrice = res.data[0].trade_price;
-            document.getElementById('current-price').innerText = currentPrice.toLocaleString();
+            
+            const priceEl = document.getElementById('current-price');
+            if(priceEl) priceEl.innerText = currentPrice.toLocaleString();
         }
-    } catch(e) {}
+    } catch(e) { console.error("가격 조회 실패", e); }
+    
+    // 가격은 무조건 계속 갱신
     setTimeout(() => fetchPriceLoop(coin), 1000); 
+}
+
+// [핵심 1] 화면 꺼짐 방지 (Wake Lock API)
+async function requestWakeLock() {
+    try {
+        if ('wakeLock' in navigator) {
+            wakeLock = await navigator.wakeLock.request('screen');
+            console.log('화면 꺼짐 방지 활성화됨');
+        }
+    } catch (err) {
+        console.log(`화면 유지 실패: ${err.name}, ${err.message}`);
+    }
 }
 
 window.searchCoin = function() {
@@ -64,6 +96,10 @@ window.searchCoin = function() {
 window.startAi = function() {
     if(isRunning) return;
     isRunning = true;
+    
+    // 화면 유지 요청
+    requestWakeLock();
+    
     updateUiRunning(true);
     runAutoTrade();
     saveState();
@@ -72,6 +108,12 @@ window.startAi = function() {
 window.stopAi = function() {
     isRunning = false;
     clearTimeout(tradeInterval);
+    
+    // 화면 유지 해제
+    if (wakeLock !== null) {
+        wakeLock.release().then(() => { wakeLock = null; });
+    }
+
     updateUiRunning(false);
     saveState();
 }
@@ -113,8 +155,14 @@ function updateUiRunning(active) {
 
 function runAutoTrade() {
     if(!isRunning) return;
-    executeTrade();
-    saveState();
+    
+    // [중요] 가격이 0이면 매매하지 않고 기다림 (체결가 0원 방지)
+    if(currentPrice > 0) {
+        executeTrade();
+        saveState();
+    }
+    
+    // 속도: 0.5초 ~ 1.5초
     const nextTime = Math.random() * 1000 + 500; 
     tradeInterval = setTimeout(runAutoTrade, nextTime);
 }
@@ -123,7 +171,9 @@ function executeTrade() {
     const input = document.getElementById('bet-amount');
     const betAmount = Number(input.value.replace(/,/g, '')) || 50000000;
     const fee = Math.floor(betAmount * feeRate);
-    const isWin = Math.random() < 0.6; // 승률 60% 설정
+    
+    // 승률 조정 (기본 60%)
+    const isWin = Math.random() < 0.6; 
     const percent = (Math.random() * 0.008) + 0.005;
 
     let profit = 0;
@@ -132,12 +182,17 @@ function executeTrade() {
 
     totalProfit += profit;
     
-    // [핵심] 승률 계산
+    // 승률 통계
     realTradeCount++;
     if(profit > 0) realWinCount++;
 
+    // 체결가 생성 (현재가 기준)
     const variation = currentPrice * 0.0005; 
-    const tradePrice = Math.floor(currentPrice + (Math.random() * variation * 2 - variation));
+    // 가격이 0원일 때 대비 안전장치
+    let tradePrice = currentPrice;
+    if(currentPrice > 0) {
+        tradePrice = Math.floor(currentPrice + (Math.random() * variation * 2 - variation));
+    }
 
     const logData = {
         time: new Date().toTimeString().split(' ')[0],
@@ -156,10 +211,9 @@ function executeTrade() {
     
     renderLogs(); 
     updateAssetDisplay(); 
-    updateWinRate(); // 승률 UI 업데이트
+    updateWinRate(); 
 }
 
-// [NEW] 승률 표시 업데이트 함수
 function updateWinRate() {
     const winRateEl = document.getElementById('win-rate');
     if(!winRateEl) return;
@@ -170,9 +224,7 @@ function updateWinRate() {
     } else {
         const rate = (realWinCount / realTradeCount) * 100;
         winRateEl.innerText = `${rate.toFixed(1)}%`;
-        
-        // 승률에 따라 색상 변경 (50% 이상이면 금색, 아니면 회색)
-        if(rate >= 50) winRateEl.style.color = "#f59e0b"; // Gold/Orange
+        if(rate >= 50) winRateEl.style.color = "#f59e0b"; 
         else winRateEl.style.color = "#94a3b8";
     }
 }
@@ -197,7 +249,6 @@ function saveState() {
         logs: tradeLogs,
         totalCount: totalDataCount,
         totalProfit: totalProfit,
-        // [핵심] 승률 정보도 저장
         realTradeCount: realTradeCount,
         realWinCount: realWinCount
     };
@@ -211,8 +262,6 @@ function loadState() {
     tradeLogs = state.logs || [];
     totalDataCount = state.totalCount || 0;
     totalProfit = state.totalProfit || 0; 
-    
-    // 승률 정보 복구
     realTradeCount = state.realTradeCount || 0;
     realWinCount = state.realWinCount || 0;
 
@@ -222,31 +271,44 @@ function loadState() {
     if(input) input.value = state.amount;
     
     updateAssetDisplay();
-    updateWinRate(); // 로드 시 승률 표시
+    updateWinRate();
 
     if (state.isRunning) {
-        const now = Date.now();
-        const diff = now - state.lastTime;
-        const missedTrades = Math.floor(diff / 1000);
-        const simulateCount = Math.min(missedTrades, 200); 
+        isRunning = true;
+        updateUiRunning(true);
+        recoverTimeGap(); // 로드 직후 바로 시간 복구 시도
+        runAutoTrade();
+    }
+}
 
-        if (simulateCount > 0) {
+// [핵심 2] 멈췄던 시간만큼 한 번에 처리하는 함수 (좀비 복구)
+function recoverTimeGap() {
+    const saved = localStorage.getItem('PLUS_AI_STATE');
+    if(!saved) return;
+    const state = JSON.parse(saved);
+
+    const now = Date.now();
+    const diff = now - state.lastTime;
+    
+    // 2초 이상 차이나면 멈췄던 걸로 간주
+    if(diff > 2000 && state.isRunning) {
+        const missedTrades = Math.floor(diff / 1000); // 1초당 1회 계산
+        const simulateCount = Math.min(missedTrades, 300); // 최대 300건까지만 (렉 방지)
+
+        if (simulateCount > 0 && currentPrice > 0) {
             for(let i=0; i<simulateCount; i++) {
                 const jump = Math.floor(Math.random() * 400) + 100;
                 totalDataCount += jump;
-
-                // [중요] 부재중 매매도 승률에 반영 (가상 시뮬레이션)
                 realTradeCount++;
-                // 60% 확률로 승리 가정
                 if(Math.random() < 0.6) realWinCount++;
                 
-                if(i === simulateCount - 1) executeTrade(); 
+                // 마지막 1건만 실제 로그 생성
+                if(i === simulateCount - 1) executeTrade();
             }
-            alert(`AI가 부재중에 ${simulateCount}번 매매하여\n약 ${(simulateCount * 250).toLocaleString()}건의 데이터를 채굴했습니다!`);
+            console.log(`[AI System] Time Travel: ${simulateCount} trades recovered.`);
         }
-        isRunning = true;
-        updateUiRunning(true);
-        runAutoTrade();
+        // 시간 갱신
+        saveState();
     }
 }
 
