@@ -1,38 +1,39 @@
-/* practice/plus-style.css - 디자인 완전 일치 버전 */
+/* practice/plus-style.css */
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; }
-body { background-color: #020617; color: #fff; padding-bottom: 80px; }
+body { background-color: #020617; color: #fff; padding-bottom: 80px; } /* 하단 메뉴 공간 */
 
-/* 상단 검색바 구역 */
-.plus-search-header { background: #0f172a; padding: 12px; border-bottom: 2px solid #3b82f6; }
-.search-wrapper { display: flex; background: #1e293b; border-radius: 8px; padding: 8px 12px; align-items: center; }
-.search-wrapper input { background: transparent; border: none; color: #fff; flex: 1; outline: none; font-size: 0.9rem; }
+/* 상단 플러스 로고 & 검색창 (한 줄로 줄임) */
+.top-bar { background: #0f172a; padding: 10px 15px; border-bottom: 2px solid #3b82f6; display: flex; align-items: center; gap: 10px; }
+.logo-text { font-weight: bold; font-size: 0.9rem; white-space: nowrap; }
+.search-container { flex: 1; display: flex; background: #1e293b; border-radius: 6px; padding: 5px 10px; }
+.search-container input { background: transparent; border: none; color: #fff; width: 100%; outline: none; font-size: 0.8rem; }
 
-/* 차트 및 정보 정보 */
-#tv_chart { width: 100%; height: 260px; display: block; border-bottom: 1px solid #1e293b; }
-.info-grid { display: grid; grid-template-columns: 1fr 1fr; background: #0f172a; border-bottom: 1px solid #1e293b; }
-.info-box { padding: 12px; border: 0.5px solid #1e293b; text-align: center; }
-.info-label { font-size: 0.7rem; color: #64748b; margin-bottom: 3px; }
-.info-val { font-size: 1rem; font-weight: bold; color: #3b82f6; }
+/* 차트 */
+#tv_chart { width: 100%; height: 240px; border-bottom: 1px solid #1e293b; }
 
-/* [중요] 금액 설정 & 평가 자산 쌍둥이 카드 디자인 */
-.money-card-section { padding: 15px; }
-.m-card { 
+/* [중요] 운영자금 & 평가자산 5:5 반반 배치 */
+.money-grid { display: flex; padding: 10px; gap: 10px; }
+.money-half { 
+    flex: 1; 
     background: #0f172a; 
-    padding: 15px; 
-    border-radius: 12px; 
+    padding: 12px; 
+    border-radius: 10px; 
     border: 1px solid #1e3a8a; 
-    margin-bottom: 10px;
-    border-left: 4px solid #3b82f6; /* 파란색 포인트 바 */
+    border-left: 4px solid #3b82f6; 
 }
-.m-card.green-point { border-left-color: #10b981; } /* 결과는 녹색 포인트 바 */
+.m-label { font-size: 0.7rem; color: #94a3b8; margin-bottom: 5px; display: block; }
+.m-input { background: transparent; border: none; color: #fff; font-size: 1.1rem; font-weight: bold; width: 100%; outline: none; }
+.m-val { font-size: 1.1rem; font-weight: bold; color: #10b981; }
 
-.m-label { font-size: 0.75rem; color: #94a3b8; margin-bottom: 6px; display: block; }
-.m-input { background: transparent; border: none; color: #fff; font-size: 1.3rem; font-weight: bold; width: 100%; outline: none; }
-.m-val { font-size: 1.3rem; font-weight: bold; color: #3b82f6; }
+/* 시작/중지 버튼 */
+.btn-group { display: flex; gap: 8px; padding: 0 10px 15px; }
+.btn { flex: 1; padding: 12px; border-radius: 6px; border: none; font-weight: bold; color: #fff; cursor: pointer; }
 
-/* 버튼 */
-.btn-group { display: flex; gap: 8px; padding: 0 15px 15px; }
-.btn { flex: 1; padding: 15px; border-radius: 8px; border: none; font-weight: bold; color: #fff; cursor: pointer; }
+/* 리스트 (무한 스크롤 스타일) */
+.log-area { padding: 10px; background: #020617; }
+table { width: 100%; border-collapse: collapse; }
+th { padding: 8px; font-size: 0.75rem; color: #64748b; border-bottom: 2px solid #1e3a8a; text-align: left; }
+td { padding: 10px 8px; font-size: 0.8rem; border-bottom: 1px solid #1e293b; }
 
-/* 매매 로그 */
-.log-section { padding: 10px; }
+/* 하단 고정 메뉴 */
+#nav-placeholder { position: fixed; bottom: 0; width: 100%; height: 60px; background: #0f172a; border-top: 1px solid #1e3a8a; z-index: 1000; }
