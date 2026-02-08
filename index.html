@@ -6,39 +6,44 @@
     <title>AI QUANT PLUS</title>
     <link rel="stylesheet" href="plus-style.css">
     <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    <style>
+        /* 상단 공통 헤더 강제 제거 */
+        #header-placeholder { display: none !important; }
+        body { padding-top: 0 !important; }
+    </style>
 </head>
 <body>
-    <div class="top-bar">
-        <div class="logo-text">AI QUANT <span style="color:#3b82f6;">PLUS</span></div>
-        <div class="search-container">
-            <input type="text" id="plus-search" placeholder="코인명 입력">
-            <button onclick="plusSearch()" style="background:none; border:none; color:#3b82f6; font-weight:bold;">검색</button>
+    <div class="plus-top-nav">
+        <div class="logo-plus">AI QUANT <span>PLUS</span></div>
+        <div class="search-mini">
+            <input type="text" id="mining-search" placeholder="코인명 (BTC)">
+            <button onclick="doMiningSearch()" style="background:none; border:none; color:#3b82f6; font-size:0.75rem; font-weight:bold; padding-left:5px;">검색</button>
         </div>
     </div>
 
     <div id="tv_chart"></div>
 
-    <div class="money-grid">
-        <div class="money-half">
-            <span class="m-label">운용 자금 설정</span>
-            <input type="text" id="bet-amount" class="m-input" value="50,000,000">
+    <div class="asset-grid">
+        <div class="asset-half">
+            <span class="label-text">운용 자금 설정</span>
+            <input type="text" id="bet-amount" class="val-input" value="50,000,000">
         </div>
-        <div class="money-half" style="border-left-color: #10b981;">
-            <span class="m-label">실시간 평가 자산</span>
-            <div id="live-asset" class="m-val">50,000,000</div>
+        <div class="asset-half green">
+            <span class="label-text">실시간 평가 자산</span>
+            <div id="live-asset" class="val-text">50,000,000</div>
         </div>
     </div>
 
-    <div class="btn-group">
-        <button onclick="startAi()" id="btn-start" class="btn" style="background:#3b82f6;">시작</button>
-        <button onclick="stopAi()" id="btn-stop" class="btn" style="background:#334155;" disabled>중지</button>
+    <div class="control-btns">
+        <button onclick="startAi()" id="btn-start" class="c-btn" style="background:#3b82f6;">시작</button>
+        <button onclick="stopAi()" id="btn-stop" class="c-btn" style="background:#334155;" disabled>중지</button>
     </div>
 
-    <div class="log-area">
-        <div style="font-size:0.85rem; font-weight:bold; margin-bottom:10px; padding-left:5px; border-left:3px solid #3b82f6;">&nbsp;실시간 매매 데이터</div>
+    <div class="data-log-section">
+        <div style="font-size:0.8rem; font-weight:bold; margin-bottom:10px; border-left:3px solid #3b82f6; padding-left:8px;">실시간 매매 데이터 일지</div>
         <table>
             <thead>
-                <tr><th>시간</th><th>포지션</th><th style="text-align:right;">수익</th></tr>
+                <tr><th style="width:25%;">시간</th><th style="width:35%;">포지션</th><th style="text-align:right;">수익</th></tr>
             </thead>
             <tbody id="log-list">
                 </tbody>
