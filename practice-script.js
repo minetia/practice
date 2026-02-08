@@ -3,7 +3,7 @@ const ROOT_URL = "https://minetia.github.io/";
 let isRunning = false, currentPrice = 0, totalProfit = 0;
 
 window.addEventListener('load', () => {
-    // 하단 네비게이션만 로드
+    // 하단 메뉴 로드
     fetch(ROOT_URL + 'nav.html').then(r => r.text()).then(h => document.getElementById('nav-placeholder').innerHTML = h);
 
     const coin = new URLSearchParams(window.location.search).get('coin') || 'BTC';
@@ -16,7 +16,7 @@ window.addEventListener('load', () => {
         });
     }
 
-    // 가격 감시
+    // 현재 가격 수신
     const getPrice = () => {
         fetch(`https://api.upbit.com/v1/ticker?markets=KRW-${coin}`)
             .then(r => r.json()).then(d => {
@@ -27,12 +27,13 @@ window.addEventListener('load', () => {
     getPrice();
 });
 
-// [수정] 전용 검색 기능
-window.doMiningSearch = function() {
-    const val = document.getElementById('mining-search').value.toUpperCase();
+// 전용 검색 기능
+window.executePlusSearch = function() {
+    const val = document.getElementById('plus-search-input').value.toUpperCase();
     if(val) location.href = `index.html?coin=${val}`;
 };
 
+// AI 채굴 엔진
 window.startAi = function() {
     if(isRunning || currentPrice === 0) return;
     isRunning = true;
@@ -45,7 +46,9 @@ window.startAi = function() {
 
     const loop = () => {
         if(!isRunning) return;
-        const bet = Number(document.getElementById('bet-amount').value.replace(/,/g, '')) || 50000000;
+        const betValue = document.getElementById('bet-amount').value.replace(/,/g, '');
+        const bet = Number(betValue) || 50000000;
+        
         const isWin = Math.random() < 0.58;
         const profit = isWin ? Math.floor(bet * (0.005 + Math.random()*0.002)) : -Math.floor(bet * 0.005);
         
@@ -56,7 +59,7 @@ window.startAi = function() {
         document.getElementById('live-asset').innerText = (bet + totalProfit).toLocaleString();
         document.getElementById('live-asset').style.color = totalProfit >= 0 ? '#10b981' : '#ef4444';
 
-        // [수정] 리스트 무한 추가 (최신 데이터가 위로)
+        // 리스트 무한 추가 (최신 데이터가 위로)
         const row = `<tr>
             <td style="color:#94a3b8; font-size:0.75rem;">${now}</td>
             <td style="font-weight:bold; color:${isWin?'#10b981':'#ef4444'}">AI ${isWin?'롱':'숏'}</td>
