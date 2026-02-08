@@ -3,50 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AI QUANT PLUS</title>
     <link rel="stylesheet" href="plus-style.css">
     <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
-    <style>
-        /* 기존 상단 공통 헤더는 플러스 모드에서 숨김 */
-        #header-placeholder { display: none !important; }
-        body { padding-top: 0 !important; }
-    </style>
+    <style>#header-placeholder { display: none !important; } body { padding-top: 0 !important; }</style>
 </head>
 <body>
     <div class="top-nav">
-        <div class="logo-area">AI QUANT <span>PLUS</span></div>
-        <div class="search-mini">
-            <input type="text" id="plus-search-input" placeholder="코인명 (BTC)">
-            <button onclick="executePlusSearch()" style="background:none; border:none; color:#3b82f6; font-size:0.75rem; font-weight:bold; padding-left:5px;">검색</button>
+        <div class="logo">AI QUANT <span>PLUS</span></div>
+        <div class="search-wrap">
+            <input type="text" id="p-search" placeholder="BTC">
+            <button onclick="pSearch()" style="background:none; border:none; color:#3b82f6; font-weight:bold; font-size:0.75rem;">검색</button>
         </div>
     </div>
 
     <div id="tv_chart"></div>
 
-    <div class="asset-grid">
+    <div class="asset-row">
         <div class="asset-card">
-            <span class="label-small">운용 자금 설정</span>
-            <input type="text" id="bet-amount" class="input-money" value="50,000,000">
+            <span class="card-label">운용 자금 설정</span>
+            <input type="text" id="bet-amount" class="card-input" value="50,000,000">
         </div>
-        <div class="asset-card result">
-            <span class="label-small">실시간 평가 자산</span>
-            <div id="live-asset" class="val-money">50,000,000</div>
+        <div class="asset-card green">
+            <span class="card-label">실시간 평가 자산</span>
+            <div id="live-asset" class="card-val">50,000,000</div>
         </div>
     </div>
 
-    <div class="control-btns">
-        <button onclick="startAi()" id="btn-start" class="btn-plus" style="background:#3b82f6;">시작</button>
-        <button onclick="stopAi()" id="btn-stop" class="btn-plus" style="background:#334155;" disabled>중지</button>
+    <div class="btn-row">
+        <button onclick="startAi()" id="btn-start" class="btn-p" style="background:#3b82f6;">시작</button>
+        <button onclick="stopAi()" id="btn-stop" class="btn-p" style="background:#334155;" disabled>중지</button>
     </div>
 
-    <div class="data-log-box">
-        <div style="font-size:0.85rem; font-weight:bold; margin-bottom:10px; border-left:3px solid #3b82f6; padding-left:8px;">실시간 매매 데이터 일지</div>
+    <div class="log-box">
+        <div style="font-size:0.8rem; font-weight:bold; margin-bottom:10px; border-left:3px solid #3b82f6; padding-left:8px;">실시간 매매 일지</div>
         <table>
-            <thead>
-                <tr><th style="width:25%;">시간</th><th style="width:35%;">포지션</th><th style="text-align:right;">수익</th></tr>
-            </thead>
-            <tbody id="log-list">
-                </tbody>
+            <thead><tr><th style="width:30%;">시간</th><th>포지션</th><th style="text-align:right;">수익</th></tr></thead>
+            <tbody id="log-list"></tbody>
         </table>
     </div>
 
