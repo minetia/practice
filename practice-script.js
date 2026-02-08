@@ -1,138 +1,85 @@
-/* practice/practice-script.js - 일체형 스크롤 및 승률/자산 완벽 연동 */
-let isRunning = false, currentPrice = 0, totalProfit = 0, tradeCount = 0, winCount = 0, logs = [];
-let wakeLock = null;
-
-window.addEventListener('load', () => {
-    // 1. UI 로드 (상/하단 메뉴)
-    const renderUI = (id, file) => {
-        fetch(`https://minetia.github.io/${file}`).then(r => r.text()).then(h => {
-            if(document.getElementById(id)) document.getElementById(id).innerHTML = h;
-        });
-    };
-    renderUI('header-placeholder', 'header.html');
-    renderUI('nav-placeholder', 'nav.html');
-
-    // 2. 코인 및 차트 설정 (스크롤 최적화)
-    const params = new URLSearchParams(window.location.search);
-    const coin = params.get('coin') || 'BTC';
-    if(document.getElementById('coin-name')) document.getElementById('coin-name').innerText = coin;
-
-    if (window.TradingView) {
-        new TradingView.widget({
-            "container_id": "tv_chart", 
-            "symbol": `BINANCE:${coin}USDT`, 
-            "interval": "1", 
-            "theme": "dark", 
-            "width": "100%",
-            "height": 300, // 차트 높이를 적절히 조절하여 아래 정보가 보이게 함
-            "hide_side_toolbar": true,
-            "toolbar_bg": "#0f172a"
-        });
-    }
-
-    // 3. 가격 데이터 루프
-    const getPrice = () => {
-        fetch(`https://api.upbit.com/v1/ticker?markets=KRW-${coin}`)
-            .then(r => r.json())
-            .then(d => {
-                currentPrice = d[0].trade_price;
-                if(document.getElementById('current-price')) 
-                    document.getElementById('current-price').innerText = currentPrice.toLocaleString();
-            }).catch(() => {});
-        setTimeout(getPrice, 1000);
-    };
-    getPrice();
-});
-
-// [AI 시작]
-window.startAi = async function() {
-    if(isRunning || currentPrice === 0) return;
-    isRunning = true;
-    
-    // 버튼 상태 및 입력창 잠금
-    const btnS = document.getElementById('btn-start');
-    const btnT = document.getElementById('btn-stop');
-    const input = document.getElementById('bet-amount');
-    if(btnS) { btnS.disabled = true; btnS.style.background = '#334155'; }
-    if(btnT) { btnT.disabled = false; btnT.style.background = '#ef4444'; }
-    if(input) input.disabled = true;
-
-    try { if(navigator.wakeLock) wakeLock = await navigator.wakeLock.request('screen'); } catch(e){}
-
-    const tradeLoop = () => {
-        if(!isRunning) return;
-
-        const bet = Number(document.getElementById('bet-amount').value.replace(/,/g, '')) || 50000000;
-        const isWin = Math.random() < 0.58; 
-        const profit = isWin ? Math.floor(bet * 0.006) : -Math.floor(bet * 0.005);
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI QUANT PLUS</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; }
+        body { background-color: #020617; color: #fff; padding-top: 60px; padding-bottom: 80px; overflow-x: hidden; }
         
-        // 데이터 누적 (수치 연동 핵심)
-        totalProfit += profit;
-        tradeCount++;
-        if(profit > 0) winCount++;
+        /* 헤더 고정 */
+        #header-placeholder { position: fixed; top: 0; width: 100%; height: 60px; z-index: 1000; background: #0f172a; border-bottom: 1px solid #334155; }
         
-        // 로그 데이터 (체결가/결과 포함)
-        logs.unshift({ 
-            time: new Date().toLocaleTimeString('ko-KR', {hour12: false}).split(' ')[0], 
-            type: isWin ? "롱" : "숏", 
-            price: currentPrice + (Math.random() * 20 - 10),
-            profit: profit 
-        });
-        if(logs.length > 30) logs.pop();
+        /* [중요] 일체형 스크롤 컨테이너 */
+        .main-container { display: flex; flex-direction: column; width: 100%; }
 
-        // --- [화면 업데이트] ---
-        
-        // 1. 승률 % (정확한 실시간 계산)
-        if(document.getElementById('win-rate')) {
-            const rate = ((winCount / tradeCount) * 100).toFixed(1);
-            document.getElementById('win-rate').innerText = rate + "%";
-            document.getElementById('win-rate').style.color = rate >= 50 ? "#f59e0b" : "#94a3b8";
-        }
-        
-        // 2. 평가 자산 (원금 + 누적수익 합산)
-        if(document.getElementById('live-asset')) {
-            const finalAsset = bet + totalProfit;
-            document.getElementById('live-asset').innerText = finalAsset.toLocaleString() + " KRW";
-            document.getElementById('live-asset').style.color = totalProfit >= 0 ? '#3b82f6' : '#ef4444';
-        }
+        /* 차트 영역: 가려지지 않게 위치 확보 */
+        #tv_chart { width: 100%; height: 320px; background: #000; margin-bottom: 10px; z-index: 1; }
 
-        // 3. 매매일지 (체결가, 결과 등 4칸 정렬)
-        const logList = document.getElementById('log-list');
-        if(logList) {
-            logList.innerHTML = logs.map(l => `
-                <tr style="border-bottom:1px solid #1e293b;">
-                    <td style="padding:10px; color:#94a3b8; font-size:0.75rem;">${l.time}</td>
-                    <td style="padding:10px; font-weight:bold; color:${l.type==='롱'?'#10b981':'#ef4444'}">AI ${l.type}</td>
-                    <td style="padding:10px; font-size:0.8rem;">${l.price.toLocaleString(undefined, {maximumFractionDigits:0})}</td>
-                    <td style="padding:10px; text-align:right; color:${l.profit>0?'#10b981':'#ef4444'}; font-weight:bold;">
-                        ${l.profit > 0 ? '+' : ''}${l.profit.toLocaleString()}
-                    </td>
-                </tr>
-            `).join('');
-        }
-        setTimeout(tradeLoop, 1500);
-    };
-    tradeLoop();
-};
+        /* 정보 박스 */
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: #1e293b; margin: 10px; border-radius: 12px; overflow: hidden; border: 1px solid #1e293b; }
+        .info-item { background: #0f172a; padding: 15px; text-align: center; }
+        .info-label { font-size: 0.75rem; color: #64748b; margin-bottom: 5px; }
+        .info-val { font-size: 1.1rem; font-weight: bold; }
 
-window.stopAi = function() {
-    isRunning = false;
-    if(wakeLock) { wakeLock.release(); wakeLock = null; }
-    document.getElementById('btn-start').disabled = false;
-    document.getElementById('btn-start').style.background = '#3b82f6';
-    document.getElementById('btn-stop').disabled = true;
-    document.getElementById('btn-stop').style.background = '#334155';
-    document.getElementById('bet-amount').disabled = false;
-};
+        /* 자산 정보 */
+        .asset-box { background: #0f172a; margin: 0 10px 10px; padding: 15px; border-radius: 12px; border: 1px solid #1e293b; }
+        .asset-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 0.9rem; }
 
-// [추출] 모든 데이터 묶어서 추출
-window.downloadPlusLog = function() {
-    if(logs.length === 0) return alert("데이터 없음");
-    let csv = "\uFEFF시간,포지션,체결가,수익금\n";
-    logs.forEach(l => { csv += `${l.time},AI ${l.type},${l.price.toFixed(0)},${l.profit}\n`; });
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `Mining_Data_${new Date().getTime()}.csv`;
-    a.click();
-};
+        /* 버튼 */
+        .btn-group { display: flex; gap: 10px; padding: 0 10px 15px; }
+        .btn { flex: 1; padding: 15px; border-radius: 8px; border: none; font-weight: bold; font-size: 1rem; color: #fff; }
+
+        /* 리스트 */
+        .log-container { padding: 0 10px; }
+        table { width: 100%; border-collapse: collapse; }
+        th { padding: 10px; font-size: 0.75rem; color: #64748b; border-bottom: 1px solid #334155; text-align: left; }
+        td { padding: 12px 10px; font-size: 0.85rem; border-bottom: 1px solid #1e293b; }
+
+        /* 네비게이션 고정 */
+        #nav-placeholder { position: fixed; bottom: 0; width: 100%; height: 70px; z-index: 1000; background: #0f172a; border-top: 1px solid #334155; }
+    </style>
+</head>
+<body>
+    <div id="header-placeholder"></div>
+
+    <div class="main-container">
+        <div id="tv_chart"></div>
+
+        <div class="info-grid">
+            <div class="info-item"><div class="info-label">현재 코인</div><div class="info-val" id="coin-name">BTC</div></div>
+            <div class="info-item"><div class="info-label">현재 가격</div><div class="info-val" id="current-price">로딩 중..</div></div>
+            <div class="info-item"><div class="info-label">수집 데이터</div><div class="info-val" id="data-count" style="color:#3b82f6;">0건</div></div>
+            <div class="info-item"><div class="info-label">AI 승률</div><div class="info-val" id="win-rate" style="color:#f59e0b;">0.0%</div></div>
+        </div>
+
+        <div class="asset-box">
+            <div class="asset-row"><span>운용 자금</span><input type="text" id="bet-amount" value="50,000,000" style="background:transparent; border:none; color:#fff; text-align:right; font-weight:bold; width:120px; outline:none;"></div>
+            <div style="height:1px; background:#1e293b; margin:10px 0;"></div>
+            <div class="asset-row"><span>평가 자산</span><span id="live-asset" style="color:#3b82f6; font-weight:bold;">50,000,000 KRW</span></div>
+        </div>
+
+        <div class="btn-group">
+            <button onclick="startAi()" id="btn-start" class="btn" style="background:#3b82f6;">AI 시작</button>
+            <button onclick="stopAi()" id="btn-stop" class="btn" style="background:#334155;" disabled>중지</button>
+        </div>
+
+        <div class="log-container">
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                <span style="font-size:0.9rem; font-weight:bold;">매매 로그</span>
+                <button onclick="downloadPlusLog()" style="background:none; border:none; color:#64748b; font-size:0.75rem;">[데이터 추출]</button>
+            </div>
+            <table>
+                <thead><tr><th>시간</th><th>포지션</th><th>체결가</th><th style="text-align:right;">결과</th></tr></thead>
+                <tbody id="log-list"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="nav-placeholder"></div>
+    <script src="practice-script.js"></script>
+</body>
+</html>
