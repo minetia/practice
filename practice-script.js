@@ -1,55 +1,170 @@
+/* practice/practice-script.js (최종 완성본) */
 const ROOT_URL = "https://minetia.github.io/";
-let isRunning = false, currentPrice = 0, totalProfit = 0;
 
-window.addEventListener('load', () => {
-    fetch(ROOT_URL + 'nav.html').then(r => r.text()).then(h => document.getElementById('nav-placeholder').innerHTML = h);
-    const coin = new URLSearchParams(window.location.search).get('coin') || 'BTC';
-    if (window.TradingView) {
-        new TradingView.widget({
-            "container_id": "tv_chart", "symbol": `BINANCE:${coin}USDT`, "interval": "1",
-            "theme": "dark", "width": "100%", "height": 260, "hide_side_toolbar": true
-        });
-    }
-    const getPrice = () => {
-        fetch(`https://api.upbit.com/v1/ticker?markets=KRW-${coin}`)
-            .then(r => r.json()).then(d => { currentPrice = d[0].trade_price; }).catch(() => {});
-        setTimeout(getPrice, 1000);
-    };
-    getPrice();
-});
+let isRunning = false;
+let tradeInterval = null;
+let currentPrice = 0;
+let feeRate = 0.001; 
+let tradeLogs = [];
 
-window.pSearch = () => {
-    const v = document.getElementById('p-search').value.toUpperCase();
-    if(v) location.href = `index.html?coin=${v}`;
+window.onload = async () => {
+    // 헤더, 네비 불러오기
+    await includeResources([
+        { id: 'header-placeholder', file: 'header.html' },
+        { id: 'nav-placeholder', file: 'nav.html' }
+    ]);
+    const params = new URLSearchParams(window.location.search);
+    const coin = params.get('coin') || 'BTC';
+    const symbol = params.get('symbol') || 'BINANCE:BTCUSDT';
+    
+    document.getElementById('coin-name').innerText = coin;
+    if(symbol.includes('USDT')) feeRate = 0.002;
+
+    new TradingView.widget({ "container_id": "tv_chart", "symbol": symbol, "interval": "1", "theme": "dark", "autosize": true, "toolbar_bg": "#0f172a", "hide_side_toolbar": true, "save_image": false });
+
+    loadLogs(); 
+    fetchPriceLoop(coin);
 };
 
-window.startAi = () => {
-    if(isRunning || currentPrice === 0) return;
+async function includeResources(targets) {
+    const promises = targets.map(t => fetch(`${ROOT_URL}${t.file}`).then(r => r.text()).then(html => ({ id: t.id, html })));
+    const results = await Promise.all(promises);
+    results.forEach(res => { const el = document.getElementById(res.id); if(el) el.innerHTML = res.html; });
+}
+
+async function fetchPriceLoop(coin) {
+    try {
+        const res = await axios.get(`https://api.upbit.com/v1/ticker?markets=KRW-${coin}`);
+        if(res.data && res.data.length > 0) {
+            currentPrice = res.data[0].trade_price;
+            document.getElementById('current-price').innerText = currentPrice.toLocaleString();
+        }
+    } catch(e) {}
+    setTimeout(() => fetchPriceLoop(coin), 1000); 
+}
+
+function startAi() {
+    if(isRunning) return;
     isRunning = true;
     document.getElementById('btn-start').disabled = true;
-    document.getElementById('btn-start').style.opacity = "0.5";
+    document.getElementById('btn-start').style.background = '#334155';
+    document.getElementById('btn-start').style.color = '#94a3b8';
     document.getElementById('btn-stop').disabled = false;
-    document.getElementById('btn-stop').style.background = "#ef4444";
+    document.getElementById('btn-stop').style.background = '#ef4444';
+    document.getElementById('btn-stop').style.color = '#fff';
+    document.getElementById('bet-amount').disabled = true;
+    runAutoTrade();
+}
 
-    const loop = () => {
-        if(!isRunning) return;
-        const bet = Number(document.getElementById('bet-amount').value.replace(/,/g, '')) || 50000000;
-        const isWin = Math.random() < 0.58;
-        const profit = isWin ? Math.floor(bet * 0.006) : -Math.floor(bet * 0.005);
-        totalProfit += profit;
-        
-        document.getElementById('live-asset').innerText = (bet + totalProfit).toLocaleString();
-        document.getElementById('live-asset').style.color = totalProfit >= 0 ? '#10b981' : '#ef4444';
+function stopAi() {
+    isRunning = false;
+    clearTimeout(tradeInterval);
+    document.getElementById('btn-start').disabled = false;
+    document.getElementById('btn-start').style.background = '#3b82f6';
+    document.getElementById('btn-start').style.color = '#fff';
+    document.getElementById('btn-stop').disabled = true;
+    document.getElementById('btn-stop').style.background = '#334155';
+    document.getElementById('btn-stop').style.color = '#94a3b8';
+    document.getElementById('bet-amount').disabled = false;
+}
 
-        const row = `<tr>
-            <td style="color:#94a3b8; font-size:0.75rem;">${new Date().toLocaleTimeString('ko-KR', {hour12:false}).split(' ')[0]}</td>
-            <td style="font-weight:bold; color:${isWin?'#10b981':'#ef4444'}">AI ${isWin?'롱':'숏'}</td>
-            <td style="text-align:right; font-weight:bold; color:${profit>0?'#10b981':'#ef4444'}">${profit>0?'+':''}${profit.toLocaleString()}</td>
-        </tr>`;
-        document.getElementById('log-list').insertAdjacentHTML('afterbegin', row);
-        setTimeout(loop, 1500);
+function runAutoTrade() {
+    if(!isRunning) return;
+    executeTrade();
+    const nextTime = Math.random() * 1000 + 1000; 
+    tradeInterval = setTimeout(runAutoTrade, nextTime);
+}
+
+function executeTrade() {
+    const input = document.getElementById('bet-amount');
+    const betAmount = Number(input.value.replace(/,/g, '')) || 50000000;
+    const fee = Math.floor(betAmount * feeRate);
+    const isWin = Math.random() < 0.6; 
+    const percent = (Math.random() * 0.008) + 0.005;
+
+    let profit = 0;
+    if(isWin) profit = Math.floor(betAmount * percent) - fee;
+    else profit = -Math.floor(betAmount * (percent * 0.6)) - fee;
+
+    const logData = {
+        time: new Date().toTimeString().split(' ')[0],
+        type: Math.random() > 0.5 ? "AI 롱" : "AI 숏",
+        profit: profit,
+        fee: fee
     };
-    loop();
-};
 
-window.stopAi = () => { isRunning = false; location.reload(); };
+    tradeLogs.unshift(logData);
+    saveLogs(); 
+    renderLogs(); 
+}
+
+function saveLogs() {
+    if(tradeLogs.length > 100) tradeLogs = tradeLogs.slice(0, 100);
+    localStorage.setItem('PLUS_LOGS', JSON.stringify(tradeLogs));
+}
+
+function loadLogs() {
+    const saved = localStorage.getItem('PLUS_LOGS');
+    if(saved) tradeLogs = JSON.parse(saved);
+    renderLogs();
+}
+
+function renderLogs() {
+    const tbody = document.getElementById('log-list');
+    const countEl = document.getElementById('data-count');
+    const emptyMsg = document.getElementById('empty-msg');
+    
+    if(countEl) countEl.innerText = tradeLogs.length;
+
+    if(tradeLogs.length > 0) {
+        if(emptyMsg) emptyMsg.style.display = 'none';
+        tbody.innerHTML = ''; 
+        
+        tradeLogs.forEach(log => {
+            const row = document.createElement('tr');
+            const color = log.profit >= 0 ? '#10b981' : '#ef4444';
+            const sign = log.profit >= 0 ? '+' : '';
+            
+            row.innerHTML = `
+                <td style="color:#94a3b8;">${log.time}</td>
+                <td style="font-weight:bold;">${log.type}</td>
+                <td style="color:${color}; font-weight:bold;">${sign}${log.profit.toLocaleString()}</td>
+                <td style="color:#64748b; font-size:0.75rem;">-${log.fee.toLocaleString()}</td>
+            `;
+            tbody.appendChild(row);
+        });
+    } else {
+        if(emptyMsg) emptyMsg.style.display = 'block';
+    }
+}
+
+// [핵심] 다운로드 기능
+function downloadPlusLog() {
+    if(tradeLogs.length === 0) {
+        alert("수집된 데이터가 없습니다. AI를 가동해주세요.");
+        return;
+    }
+
+    let csvContent = "data:text/csv;charset=utf-8,Time,Type,Profit,Fee\n";
+    tradeLogs.forEach(row => {
+        csvContent += `${row.time},${row.type},${row.profit},${row.fee}\n`;
+    });
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    
+    // 파일명: Plus_Data_날짜.csv
+    const today = new Date().toISOString().slice(0,10).replace(/-/g,"");
+    link.setAttribute("download", `Plus_Data_${today}.csv`);
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+function formatInput(input) {
+    let val = input.value.replace(/[^0-9]/g, '');
+    if(!val) return;
+    input.value = Number(val).toLocaleString();
+}
