@@ -1,9 +1,9 @@
-/* practice/plus-style.css - 5:5 반반 & 일체형 스크롤 */
+/* practice/plus-style.css */
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; }
 body { background-color: #020617; color: #fff; padding-bottom: 80px; overflow-x: hidden; }
 
-/* [수정] 상단바: 로고와 검색창을 한 줄로 배치 */
-.plus-top-nav { 
+/* 상단 통합 헤더: 로고와 축소 검색창을 한 줄로 */
+.top-nav { 
     background: #0f172a; 
     padding: 10px 15px; 
     border-bottom: 2px solid #3b82f6; 
@@ -15,8 +15,8 @@ body { background-color: #020617; color: #fff; padding-bottom: 80px; overflow-x:
     top: 0;
     z-index: 1001;
 }
-.logo-plus { font-weight: bold; font-size: 1rem; color: #fff; white-space: nowrap; }
-.logo-plus span { color: #3b82f6; font-size: 0.8rem; margin-left: 4px; }
+.logo-area { font-weight: bold; font-size: 1rem; color: #fff; white-space: nowrap; }
+.logo-area span { color: #3b82f6; font-size: 0.8rem; margin-left: 4px; }
 
 .search-mini { 
     flex: 1; 
@@ -24,16 +24,16 @@ body { background-color: #020617; color: #fff; padding-bottom: 80px; overflow-x:
     background: #1e293b; 
     border-radius: 6px; 
     padding: 6px 10px; 
-    max-width: 180px; /* 검색창 크기 축소 */
+    max-width: 160px; /* 검색창 크기 최적화 */
 }
 .search-mini input { background: transparent; border: none; color: #fff; width: 100%; outline: none; font-size: 0.8rem; }
 
 /* 차트 영역 */
 #tv_chart { width: 100%; height: 260px; background: #000; border-bottom: 1px solid #1e293b; }
 
-/* [수정] 자산 카드 5:5 반반 배치 */
+/* [핵심] 운용자금 & 평가자산 5:5 반반 배치 */
 .asset-grid { display: flex; padding: 10px; gap: 8px; }
-.asset-half { 
+.asset-card { 
     flex: 1; 
     background: #0f172a; 
     padding: 12px; 
@@ -41,21 +41,21 @@ body { background-color: #020617; color: #fff; padding-bottom: 80px; overflow-x:
     border: 1px solid #1e3a8a; 
     border-left: 4px solid #3b82f6; 
 }
-.asset-half.green { border-left-color: #10b981; }
+.asset-card.result { border-left-color: #10b981; }
 
-.label-text { font-size: 0.65rem; color: #94a3b8; margin-bottom: 5px; display: block; }
-.val-input { background: transparent; border: none; color: #fff; font-size: 1.1rem; font-weight: bold; width: 100%; outline: none; }
-.val-text { font-size: 1.1rem; font-weight: bold; color: #10b981; }
+.label-small { font-size: 0.65rem; color: #94a3b8; margin-bottom: 5px; display: block; }
+.input-money { background: transparent; border: none; color: #fff; font-size: 1.1rem; font-weight: bold; width: 100%; outline: none; }
+.val-money { font-size: 1.1rem; font-weight: bold; color: #10b981; }
 
-/* 시작/중지 버튼 */
+/* 버튼 그룹 */
 .control-btns { display: flex; gap: 8px; padding: 0 10px 15px; }
-.c-btn { flex: 1; padding: 14px; border-radius: 8px; border: none; font-weight: bold; color: #fff; cursor: pointer; }
+.btn-plus { flex: 1; padding: 14px; border-radius: 8px; border: none; font-weight: bold; color: #fff; cursor: pointer; }
 
-/* 리스트 (무한 스크롤 스타일) */
-.data-log-section { padding: 10px 10px 100px; background: #020617; }
+/* 리스트 (무한 스크롤) */
+.data-log-box { padding: 10px 10px 20px; background: #020617; }
 table { width: 100%; border-collapse: collapse; }
 th { padding: 8px; font-size: 0.7rem; color: #64748b; border-bottom: 2px solid #3b82f6; text-align: left; }
 td { padding: 12px 8px; font-size: 0.8rem; border-bottom: 1px solid #1e293b; }
 
 /* 하단 네비게이션 고정 */
-#nav-placeholder { position: fixed; bottom: 0; width: 100%; height: 70px; background: #0f172a; border-top: 1px solid #1e293b; z-index: 1001; }
+#nav-placeholder { position: fixed; bottom: 0; width: 100%; height: 70px; background: #0f172a; border-top: 1px solid #1e3a8a; z-index: 1001; }
