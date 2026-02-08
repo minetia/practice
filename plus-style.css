@@ -1,61 +1,34 @@
-/* practice/plus-style.css */
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; }
 body { background-color: #020617; color: #fff; padding-bottom: 80px; overflow-x: hidden; }
 
-/* 상단 통합 헤더: 로고와 축소 검색창을 한 줄로 */
-.top-nav { 
-    background: #0f172a; 
-    padding: 10px 15px; 
-    border-bottom: 2px solid #3b82f6; 
-    display: flex; 
-    align-items: center; 
-    justify-content: space-between;
-    gap: 15px;
-    position: sticky;
-    top: 0;
-    z-index: 1001;
-}
-.logo-area { font-weight: bold; font-size: 1rem; color: #fff; white-space: nowrap; }
-.logo-area span { color: #3b82f6; font-size: 0.8rem; margin-left: 4px; }
+/* 상단바: 로고 옆에 검색창 붙이기 */
+.top-nav { background: #0f172a; padding: 10px; border-bottom: 2px solid #3b82f6; display: flex; align-items: center; justify-content: space-between; gap: 10px; position: sticky; top: 0; z-index: 1001; }
+.logo { font-weight: bold; font-size: 0.9rem; white-space: nowrap; }
+.logo span { color: #3b82f6; font-size: 0.7rem; }
 
-.search-mini { 
-    flex: 1; 
-    display: flex; 
-    background: #1e293b; 
-    border-radius: 6px; 
-    padding: 6px 10px; 
-    max-width: 160px; /* 검색창 크기 최적화 */
-}
-.search-mini input { background: transparent; border: none; color: #fff; width: 100%; outline: none; font-size: 0.8rem; }
+.search-wrap { flex: 1; display: flex; background: #1e293b; border-radius: 6px; padding: 5px 10px; max-width: 150px; }
+.search-wrap input { background: transparent; border: none; color: #fff; width: 100%; outline: none; font-size: 0.8rem; }
 
-/* 차트 영역 */
-#tv_chart { width: 100%; height: 260px; background: #000; border-bottom: 1px solid #1e293b; }
+/* 차트 */
+#tv_chart { width: 100%; height: 260px; border-bottom: 1px solid #1e293b; }
 
-/* [핵심] 운용자금 & 평가자산 5:5 반반 배치 */
-.asset-grid { display: flex; padding: 10px; gap: 8px; }
-.asset-card { 
-    flex: 1; 
-    background: #0f172a; 
-    padding: 12px; 
-    border-radius: 10px; 
-    border: 1px solid #1e3a8a; 
-    border-left: 4px solid #3b82f6; 
-}
-.asset-card.result { border-left-color: #10b981; }
+/* 자산 카드 5:5 반반 */
+.asset-row { display: flex; padding: 10px; gap: 8px; }
+.asset-card { flex: 1; background: #0f172a; padding: 10px; border-radius: 8px; border: 1px solid #1e3a8a; border-left: 4px solid #3b82f6; }
+.asset-card.green { border-left-color: #10b981; }
+.card-label { font-size: 0.65rem; color: #94a3b8; margin-bottom: 4px; display: block; }
+.card-input { background: transparent; border: none; color: #fff; font-size: 1rem; font-weight: bold; width: 100%; outline: none; }
+.card-val { font-size: 1rem; font-weight: bold; color: #10b981; }
 
-.label-small { font-size: 0.65rem; color: #94a3b8; margin-bottom: 5px; display: block; }
-.input-money { background: transparent; border: none; color: #fff; font-size: 1.1rem; font-weight: bold; width: 100%; outline: none; }
-.val-money { font-size: 1.1rem; font-weight: bold; color: #10b981; }
+/* 버튼 */
+.btn-row { display: flex; gap: 8px; padding: 0 10px 15px; }
+.btn-p { flex: 1; padding: 12px; border-radius: 6px; border: none; font-weight: bold; color: #fff; cursor: pointer; }
 
-/* 버튼 그룹 */
-.control-btns { display: flex; gap: 8px; padding: 0 10px 15px; }
-.btn-plus { flex: 1; padding: 14px; border-radius: 8px; border: none; font-weight: bold; color: #fff; cursor: pointer; }
-
-/* 리스트 (무한 스크롤) */
-.data-log-box { padding: 10px 10px 20px; background: #020617; }
+/* 리스트 */
+.log-box { padding: 10px; }
 table { width: 100%; border-collapse: collapse; }
 th { padding: 8px; font-size: 0.7rem; color: #64748b; border-bottom: 2px solid #3b82f6; text-align: left; }
 td { padding: 12px 8px; font-size: 0.8rem; border-bottom: 1px solid #1e293b; }
 
-/* 하단 네비게이션 고정 */
-#nav-placeholder { position: fixed; bottom: 0; width: 100%; height: 70px; background: #0f172a; border-top: 1px solid #1e3a8a; z-index: 1001; }
+/* 하단 고정 메뉴 */
+#nav-placeholder { position: fixed; bottom: 0; width: 100%; height: 60px; background: #0f172a; border-top: 1px solid #1e3a8a; z-index: 1001; }
