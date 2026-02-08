@@ -7,80 +7,76 @@
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
     <style>
+        /* 기본은 일반 모드처럼 가볍게, 색상은 플러스로 */
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; }
-        body { background-color: #020617; color: #fff; padding-top: 60px; padding-bottom: 80px; }
+        body { background-color: #020617; color: #fff; padding: 60px 0 80px; }
         
-        /* 헤더/네비 고정 */
-        #header-placeholder { position: fixed; top: 0; width: 100%; height: 60px; z-index: 1000; background: #0f172a; border-bottom: 1px solid #334155; }
-        #nav-placeholder { position: fixed; bottom: 0; width: 100%; height: 70px; z-index: 1000; background: #0f172a; border-top: 1px solid #334155; }
+        #header-placeholder { position: fixed; top: 0; width: 100%; height: 60px; z-index: 1000; background: #0f172a; border-bottom: 1px solid #1e3a8a; }
+        #nav-placeholder { position: fixed; bottom: 0; width: 100%; height: 70px; z-index: 1000; background: #0f172a; border-top: 1px solid #1e3a8a; }
 
-        /* 플러스 전용 헤더 */
-        .plus-title-bar { background: linear-gradient(135deg, #1e3a8a, #0f172a); padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1e40af; }
+        /* 플러스 로고 바 */
+        .plus-header { background: linear-gradient(90deg, #1e3a8a, #1e40af); padding: 10px 15px; font-weight: bold; border-bottom: 2px solid #3b82f6; display: flex; justify-content: space-between; }
 
-        /* 차트 영역 - 높이를 살짝 줄여서 정보창과 밀착 */
-        #tv_chart { width: 100%; height: 260px; background: #000; }
+        /* 차트 - 절대 안 가리게 block으로 배치 */
+        #tv_chart { width: 100%; height: 240px; background: #000; display: block; }
 
-        /* 정보 그리드 - 간격 최소화 */
-        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: #1e293b; border: 1px solid #1e293b; margin: 5px 0; }
-        .info-item { background: #0f172a; padding: 12px; text-align: center; }
-        .info-label { font-size: 0.7rem; color: #64748b; margin-bottom: 3px; }
-        .info-val { font-size: 1rem; font-weight: bold; }
+        /* 정보창 - 일반 모드 스타일 */
+        .info-container { display: flex; flex-wrap: wrap; background: #0f172a; border-bottom: 1px solid #1e293b; }
+        .info-box { flex: 1; min-width: 50%; padding: 12px; border: 0.5px solid #1e293b; text-align: center; }
+        .info-label { font-size: 0.7rem; color: #64748b; margin-bottom: 2px; }
+        .info-val { font-size: 1rem; font-weight: bold; color: #3b82f6; }
 
-        /* 자산 및 버튼 */
-        .control-box { padding: 10px; }
-        .asset-info { background: #0f172a; padding: 12px; border-radius: 8px; border: 1px solid #1e293b; margin-bottom: 10px; }
-        .btn-group { display: flex; gap: 10px; }
-        .btn { flex: 1; padding: 14px; border-radius: 8px; border: none; font-weight: bold; font-size: 1rem; color: #fff; cursor: pointer; }
+        /* 제어 구역 */
+        .control-section { padding: 15px; background: #020617; }
+        .asset-card { background: #0f172a; padding: 15px; border-radius: 8px; border-left: 4px solid #3b82f6; margin-bottom: 15px; }
+        .btn-group { display: flex; gap: 8px; }
+        .btn { flex: 1; padding: 15px; border-radius: 6px; border: none; font-weight: bold; font-size: 1rem; color: #fff; cursor: pointer; }
 
-        /* 로그 리스트 */
-        .log-section { padding: 10px; }
+        /* 매매 리스트 - 일반 모드처럼 시원하게 */
+        .log-section { padding: 10px; background: #020617; }
         table { width: 100%; border-collapse: collapse; }
-        th { padding: 8px; font-size: 0.7rem; color: #64748b; border-bottom: 1px solid #334155; text-align: left; }
-        td { padding: 10px 8px; font-size: 0.8rem; border-bottom: 1px solid #1e293b; }
+        th { padding: 10px; font-size: 0.75rem; color: #64748b; border-bottom: 2px solid #1e3a8a; text-align: left; }
+        td { padding: 12px 10px; font-size: 0.85rem; border-bottom: 1px solid #1e293b; }
     </style>
 </head>
 <body>
     <div id="header-placeholder"></div>
-
-    <div class="plus-title-bar">
-        <div><div style="font-size:0.7rem; color:#93c5fd;">PLUS AI AGENT</div><div style="font-size:1.1rem; font-weight:bold;">데이터 마이닝 모드</div></div>
-        <div style="text-align:right;"><div style="font-size:0.6rem; color:#94a3b8;">STATUS</div><div style="font-size:0.8rem; color:#3b82f6; font-weight:bold;">심사 중 (PRO)</div></div>
+    
+    <div class="plus-header">
+        <span>AI QUANT <span style="color:#93c5fd;">PLUS+</span></span>
+        <span style="font-size:0.75rem; color:#d1d5db;">마이닝 모드 작동중</span>
     </div>
 
     <div id="tv_chart"></div>
 
-    <div class="info-grid">
-        <div class="info-item"><div class="info-label">현재 코인</div><div class="info-val" id="coin-name">BTC</div></div>
-        <div class="info-item"><div class="info-label">현재 가격</div><div class="info-val" id="current-price">-</div></div>
-        <div class="info-item"><div class="info-label">수집 데이터</div><div class="info-val" id="data-count" style="color:#3b82f6;">0건</div></div>
-        <div class="info-item"><div class="info-label">AI 승률</div><div class="info-val" id="win-rate" style="color:#f59e0b;">0.0%</div></div>
+    <div class="info-container">
+        <div class="info-box"><div class="info-label">코인명</div><div class="info-val" id="coin-name">BTC</div></div>
+        <div class="info-box"><div class="info-label">현재가</div><div class="info-val" id="current-price">-</div></div>
+        <div class="info-box"><div class="info-label">수집데이터</div><div class="info-val" id="data-count">0건</div></div>
+        <div class="info-box"><div class="info-label">AI 승률</div><div class="info-val" id="win-rate" style="color:#f59e0b;">0.0%</div></div>
     </div>
 
-    <div class="control-box">
-        <div class="asset-info">
-            <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:0.8rem; color:#94a3b8;">
-                <span>AI 운용 자금</span>
-                <input type="text" id="bet-amount" value="50,000,000" style="background:transparent; border:none; color:#fff; text-align:right; font-weight:bold; outline:none; width:100px;">
+    <div class="control-section">
+        <div class="asset-card">
+            <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                <span style="font-size:0.8rem; color:#94a3b8;">평가 자산 (KRW)</span>
+                <input type="text" id="bet-amount" value="50,000,000" style="background:transparent; border:none; color:#fff; text-align:right; font-weight:bold; width:100px;">
             </div>
-            <div style="display:flex; justify-content:space-between; font-weight:bold;">
-                <span>평가 자산</span>
-                <span id="live-asset" style="color:#3b82f6;">50,000,000 KRW</span>
-            </div>
+            <div id="live-asset" style="font-size:1.3rem; font-weight:bold; color:#3b82f6;">50,000,000</div>
         </div>
-
         <div class="btn-group">
-            <button onclick="startAi()" id="btn-start" class="btn" style="background:#3b82f6;">AI 자동수집 시작</button>
+            <button onclick="startAi()" id="btn-start" class="btn" style="background:#3b82f6;">AI 마이닝 시작</button>
             <button onclick="stopAi()" id="btn-stop" class="btn" style="background:#334155;" disabled>중지</button>
         </div>
     </div>
 
     <div class="log-section">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <span style="font-size:0.85rem; font-weight:bold;">AI 매매 로그 (승급 자료)</span>
-            <button onclick="downloadPlusLog()" style="background:none; border:none; color:#64748b; font-size:0.7rem; text-decoration:underline;">데이터 추출</button>
+        <div style="display:flex; justify-content:space-between; margin-bottom:10px; padding:0 5px;">
+            <b style="font-size:0.9rem;">실시간 매매일지</b>
+            <span onclick="downloadPlusLog()" style="font-size:0.75rem; color:#64748b; text-decoration:underline; cursor:pointer;">추출하기</span>
         </div>
         <table>
-            <thead><tr><th>시간</th><th>포지션</th><th>체결가</th><th style="text-align:right;">결과</th></tr></thead>
+            <thead><tr><th>시간</th><th>포지션</th><th>체결가</th><th style="text-align:right;">수익</th></tr></thead>
             <tbody id="log-list"></tbody>
         </table>
     </div>
