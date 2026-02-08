@@ -8,65 +8,53 @@
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
     <style>
-        /* 기본 스타일 */
+        /* [중요] 기본 스타일 및 고정 레이아웃 설정 */
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; }
-        body { background-color: #020617; color: #fff; padding-bottom: 80px; } /* 하단 여백 필수 */
         
-        /* 1. 하단 메뉴바 스타일 (이게 빠져서 안 보였습니다!) */
-        .nav-container {
-            position: fixed;
+        body { 
+            background-color: #020617; 
+            color: #fff; 
+            /* [핵심] 상단 헤더와 하단 메뉴가 가리지 않도록 여백을 줍니다 */
+            padding-top: 60px;    /* 헤더 높이만큼 띄움 */
+            padding-bottom: 80px; /* 하단 메뉴 높이만큼 띄움 */
+        } 
+
+        /* [핵심 1] 상단 헤더 고정 (불러온 헤더를 감싸는 틀) */
+        #header-placeholder {
+            position: fixed; /* 화면에 고정 */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 60px; /* 높이 고정 */
+            z-index: 9999; /* 제일 위에 뜨게 */
+            background-color: #0f172a; /* 배경색 필수 (투명하면 뒤에 비침) */
+            border-bottom: 1px solid #334155;
+        }
+
+        /* [핵심 2] 하단 메뉴 고정 (불러온 메뉴를 감싸는 틀) */
+        #nav-placeholder {
+            position: fixed; /* 화면에 고정 */
             bottom: 0;
             left: 0;
             width: 100%;
+            height: 70px; /* 높이 고정 */
+            z-index: 9999; /* 제일 위에 뜨게 */
             background-color: #0f172a;
             border-top: 1px solid #334155;
-            display: flex;
-            justify-content: space-around;
-            padding: 10px 0;
-            z-index: 1000;
-            box-shadow: 0 -4px 10px rgba(0,0,0,0.3);
-        }
-        .nav-container button {
-            background: none;
-            border: none;
-            color: #94a3b8;
-            font-size: 0.75rem;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .nav-container button i {
-            font-size: 1.2rem;
-            margin-bottom: 4px;
-            display: block;
-        }
-        .nav-container button:hover, .nav-container button:active {
-            color: #3b82f6;
         }
 
-        /* 2. 상단 헤더 스타일 */
-        .header-container {
-            background-color: #0f172a;
-            padding: 15px;
-            border-bottom: 1px solid #334155;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        /* 플러스 모드 전용 헤더 */
+        /* 여기서부터는 플러스 모드 전용 디자인 */
         .plus-header {
             background: linear-gradient(135deg, #1e3a8a, #1e293b);
             padding: 15px; border-bottom: 1px solid #3b82f6;
             display: flex; justify-content: space-between; align-items: center;
         }
 
-        /* 실시간 정보 박스 */
         .info-box {
             background: #0f172a; padding: 15px; margin: 15px; border-radius: 12px;
             border: 1px solid #1e293b; display: flex; justify-content: space-between; text-align: center;
         }
 
-        /* 버튼 그룹 */
         .btn-group { display: flex; gap: 10px; padding: 0 15px; margin-bottom: 15px; }
         .btn {
             flex: 1; padding: 12px; border: none; border-radius: 8px;
@@ -74,11 +62,35 @@
             transition: 0.1s;
         }
         
-        /* 테이블 */
         table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
         th { padding: 10px; text-align: center; color: #64748b; border-bottom: 1px solid #334155; }
         td { padding: 10px; border-bottom: 1px solid #1e293b; text-align: center; }
 
+        /* nav.html이 로드되었을 때 버튼 스타일 (CSS 주입) */
+        .nav-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            height: 100%; /* 부모 높이 꽉 채우기 */
+            width: 100%;
+        }
+        .nav-container button {
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 0.75rem;
+            cursor: pointer;
+            text-align: center;
+        }
+        .nav-container button i {
+            font-size: 1.4rem;
+            margin-bottom: 4px;
+            display: block;
+        }
+        /* 현재 활성화된 탭(플러스) 색상 강조 */
+        .nav-container button:nth-child(2) {
+            color: #3b82f6;
+        }
     </style>
 </head>
 <body>
