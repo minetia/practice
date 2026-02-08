@@ -27,6 +27,7 @@ window.addEventListener('load', () => {
     getPrice();
 });
 
+// 검색 기능 복구
 window.searchCoin = function() {
     const val = document.getElementById('coin-search').value.toUpperCase();
     if(val) location.href = `index.html?coin=${val}`;
@@ -57,10 +58,11 @@ window.startAi = function() {
         });
         if(logs.length > 20) logs.pop();
 
+        // 실시간 수치 갱신
         document.getElementById('data-count').innerText = (tradeCount * 412).toLocaleString() + "건";
         document.getElementById('win-rate').innerText = ((winCount/tradeCount)*100).toFixed(1) + "%";
         document.getElementById('live-asset').innerText = (bet + totalProfit).toLocaleString();
-        document.getElementById('live-asset').style.color = totalProfit >= 0 ? '#10b981' : '#ef4444';
+        document.getElementById('live-asset').style.color = totalProfit >= 0 ? '#3b82f6' : '#ef4444';
         
         document.getElementById('log-list').innerHTML = logs.map(l => `
             <tr style="border-bottom:1px solid #1e293b;">
@@ -83,6 +85,6 @@ window.downloadPlusLog = () => {
     logs.forEach(l => { csv += `${l.time},${l.type},${l.profit}\n`; });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([csv], {type:'text/csv'}));
-    a.download = `Mining_Final.csv`;
+    a.download = `Mining_Data.csv`;
     a.click();
 };
