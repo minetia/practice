@@ -1,4 +1,4 @@
-/* practice/practice-script.js (체결가 + 일반모드 UI 적용) */
+/* practice/practice-script.js (승률 계산 기능 추가됨) */
 const ROOT_URL = "https://minetia.github.io/";
 
 let isRunning = false;
@@ -8,6 +8,10 @@ let feeRate = 0.001;
 let tradeLogs = [];
 let totalDataCount = 0; 
 let totalProfit = 0;
+
+// [NEW] 승률 계산용 변수
+let realTradeCount = 0; // 실제 매매 횟수 (데이터 뻥튀기 제외)
+let realWinCount = 0;   // 승리 횟수
 
 window.onload = async () => {
     await includeResources([
@@ -119,7 +123,7 @@ function executeTrade() {
     const input = document.getElementById('bet-amount');
     const betAmount = Number(input.value.replace(/,/g, '')) || 50000000;
     const fee = Math.floor(betAmount * feeRate);
-    const isWin = Math.random() < 0.6; 
+    const isWin = Math.random() < 0.6; // 승률 60% 설정
     const percent = (Math.random() * 0.008) + 0.005;
 
     let profit = 0;
@@ -127,15 +131,18 @@ function executeTrade() {
     else profit = -Math.floor(betAmount * (percent * 0.6)) - fee;
 
     totalProfit += profit;
+    
+    // [핵심] 승률 계산
+    realTradeCount++;
+    if(profit > 0) realWinCount++;
 
-    // [핵심] 체결가 생성 (현재가에서 약간 변동)
     const variation = currentPrice * 0.0005; 
     const tradePrice = Math.floor(currentPrice + (Math.random() * variation * 2 - variation));
 
     const logData = {
         time: new Date().toTimeString().split(' ')[0],
         type: Math.random() > 0.5 ? "AI 롱" : "AI 숏",
-        price: tradePrice, // 체결가 저장
+        price: tradePrice, 
         profit: profit,
         fee: fee,
         percent: isWin ? percent : -percent
@@ -149,6 +156,25 @@ function executeTrade() {
     
     renderLogs(); 
     updateAssetDisplay(); 
+    updateWinRate(); // 승률 UI 업데이트
+}
+
+// [NEW] 승률 표시 업데이트 함수
+function updateWinRate() {
+    const winRateEl = document.getElementById('win-rate');
+    if(!winRateEl) return;
+
+    if(realTradeCount === 0) {
+        winRateEl.innerText = "0.0%";
+        winRateEl.style.color = "#64748b";
+    } else {
+        const rate = (realWinCount / realTradeCount) * 100;
+        winRateEl.innerText = `${rate.toFixed(1)}%`;
+        
+        // 승률에 따라 색상 변경 (50% 이상이면 금색, 아니면 회색)
+        if(rate >= 50) winRateEl.style.color = "#f59e0b"; // Gold/Orange
+        else winRateEl.style.color = "#94a3b8";
+    }
 }
 
 function updateAssetDisplay() {
@@ -170,7 +196,10 @@ function saveState() {
         amount: input.value,
         logs: tradeLogs,
         totalCount: totalDataCount,
-        totalProfit: totalProfit 
+        totalProfit: totalProfit,
+        // [핵심] 승률 정보도 저장
+        realTradeCount: realTradeCount,
+        realWinCount: realWinCount
     };
     localStorage.setItem('PLUS_AI_STATE', JSON.stringify(state));
 }
@@ -182,11 +211,18 @@ function loadState() {
     tradeLogs = state.logs || [];
     totalDataCount = state.totalCount || 0;
     totalProfit = state.totalProfit || 0; 
+    
+    // 승률 정보 복구
+    realTradeCount = state.realTradeCount || 0;
+    realWinCount = state.realWinCount || 0;
+
     renderLogs();
     
     const input = document.getElementById('bet-amount');
     if(input) input.value = state.amount;
+    
     updateAssetDisplay();
+    updateWinRate(); // 로드 시 승률 표시
 
     if (state.isRunning) {
         const now = Date.now();
@@ -198,6 +234,12 @@ function loadState() {
             for(let i=0; i<simulateCount; i++) {
                 const jump = Math.floor(Math.random() * 400) + 100;
                 totalDataCount += jump;
+
+                // [중요] 부재중 매매도 승률에 반영 (가상 시뮬레이션)
+                realTradeCount++;
+                // 60% 확률로 승리 가정
+                if(Math.random() < 0.6) realWinCount++;
+                
                 if(i === simulateCount - 1) executeTrade(); 
             }
             alert(`AI가 부재중에 ${simulateCount}번 매매하여\n약 ${(simulateCount * 250).toLocaleString()}건의 데이터를 채굴했습니다!`);
@@ -224,9 +266,6 @@ function renderLogs() {
             const color = log.profit >= 0 ? '#10b981' : '#ef4444';
             const sign = log.profit >= 0 ? '+' : '';
             
-            // [핵심] 일반 모드와 똑같은 디자인으로 변경!
-            // 3번째 칸: 체결가
-            // 4번째 칸: 수익금 + 수익률 + 수수료(회색)
             const resultHTML = `
                 <div>${sign}${log.profit.toLocaleString()}</div>
                 <div style="font-size:0.7rem; opacity:0.8; font-weight:normal;">(${sign}${(Math.abs(log.percent)*100).toFixed(2)}%)</div>
