@@ -14,8 +14,8 @@
         body { 
             background-color: #020617; 
             color: #fff; 
-            padding-top: 60px;    /* 헤더 높이만큼 띄움 */
-            padding-bottom: 80px; /* 하단 메뉴 높이만큼 띄움 */
+            padding-top: 60px;    
+            padding-bottom: 80px; 
         } 
 
         /* 상단 헤더 고정 틀 */
@@ -95,11 +95,22 @@
     </div>
 
     <div style="padding: 0 15px 15px;">
-        <div style="background:#1e293b; border:1px solid #334155; border-radius:8px; padding:10px 15px; display:flex; justify-content:space-between; align-items:center;">
-            <span style="color:#94a3b8; font-size:0.9rem;">AI 운용 자금</span>
-            <input type="text" id="bet-amount" value="50,000,000" onkeyup="formatInput(this)" 
-                   style="background:transparent; border:none; color:#fff; font-size:1.1rem; font-weight:bold; text-align:right; width:150px; outline:none;">
-            <span style="color:#fff; margin-left:5px;">원</span>
+        <div style="background:#1e293b; border:1px solid #334155; border-radius:12px; padding:15px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <span style="color:#94a3b8; font-size:0.9rem;">AI 운용 자금</span>
+                <div>
+                    <input type="text" id="bet-amount" value="50,000,000" onkeyup="formatInput(this)" 
+                       style="background:transparent; border:none; color:#fff; font-size:1.1rem; font-weight:bold; text-align:right; width:120px; outline:none;">
+                    <span style="color:#fff;">원</span>
+                </div>
+            </div>
+            
+            <div style="border-top:1px solid #334155; margin-bottom:10px;"></div>
+
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="color:#cbd5e1; font-size:0.9rem;">현재 평가 자산</span>
+                <span id="live-asset" style="color:#3b82f6; font-size:1.2rem; font-weight:800;">50,000,000 KRW</span>
+            </div>
         </div>
     </div>
 
@@ -115,7 +126,6 @@
     <div style="padding: 0 15px;">
         <div style="margin-bottom:10px; display:flex; justify-content:space-between; align-items:end;">
             <span style="font-size:0.9rem; color:#cbd5e1;">AI 매매 로그 (승급 자료)</span>
-            
             <button onclick="downloadPlusLog()" style="background:#1e293b; border:1px solid #334155; color:#cbd5e1; padding:6px 12px; border-radius:4px; font-size:0.75rem; cursor:pointer;">
                 <i class="fas fa-download"></i> 데이터 추출
             </button>
