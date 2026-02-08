@@ -1,8 +1,9 @@
-/* practice/practice-script.js - 차트 복구 & 버튼 상태 완벽 제어 */
+/* practice/practice-script.js - 승률, 리스트, 추출 완벽 복구판 */
 let isRunning = false, currentPrice = 0, totalProfit = 0, totalCount = 0, tradeCount = 0, winCount = 0, logs = [];
+let wakeLock = null;
 
 window.addEventListener('DOMContentLoaded', () => {
-    // 1. UI 컴포넌트 로드
+    // 1. 상하단 UI 로드 (절대 경로)
     const loadUI = (id, file) => {
         fetch(`https://minetia.github.io/${file}`).then(r => r.text()).then(h => {
             if(document.getElementById(id)) document.getElementById(id).innerHTML = h;
@@ -11,31 +12,20 @@ window.addEventListener('DOMContentLoaded', () => {
     loadUI('header-placeholder', 'header.html');
     loadUI('nav-placeholder', 'nav.html');
 
-    // 2. 코인 설정 및 차트 강제 로드
+    // 2. 코인 설정 및 차트 로드
     const params = new URLSearchParams(window.location.search);
     const coin = params.get('coin') || 'BTC';
     const symbol = params.get('symbol') || 'BINANCE:BTCUSDT';
     if(document.getElementById('coin-name')) document.getElementById('coin-name').innerText = coin;
 
-    // [차트 복구] TradingView 로딩 확인 후 생성
-    const loadChart = () => {
-        if (window.TradingView) {
-            new TradingView.widget({
-                "container_id": "tv_chart",
-                "symbol": symbol,
-                "interval": "1",
-                "theme": "dark",
-                "autosize": true,
-                "hide_side_toolbar": true,
-                "toolbar_bg": "#0f172a"
-            });
-        } else {
-            setTimeout(loadChart, 500); // 로딩 안됐으면 0.5초 후 재시도
-        }
-    };
-    loadChart();
+    if (window.TradingView) {
+        new TradingView.widget({
+            "container_id": "tv_chart", "symbol": symbol, "interval": "1", 
+            "theme": "dark", "autosize": true, "hide_side_toolbar": true
+        });
+    }
 
-    // 3. 실시간 가격
+    // 3. 실시간 가격 호출
     const getPrice = async () => {
         try {
             const r = await fetch(`https://api.upbit.com/v1/ticker?markets=KRW-${coin}`);
@@ -48,67 +38,73 @@ window.addEventListener('DOMContentLoaded', () => {
     getPrice();
 });
 
-// AI 시작 함수
-window.startAi = function() {
+// [AI 시작]
+window.startAi = async function() {
     if(isRunning || currentPrice === 0) return;
-    
-    // [버튼 및 입력창 상태 제어]
-    const btnStart = document.getElementById('btn-start');
-    const btnStop = document.getElementById('btn-stop');
-    const inputAmount = document.getElementById('bet-amount');
-
     isRunning = true;
-    
-    // 버튼 색상 및 상태 즉시 변경
-    if(btnStart) {
-        btnStart.disabled = true;
-        btnStart.style.backgroundColor = '#334155'; // 어두운 색으로 변경
-        btnStart.style.opacity = '0.5';
-    }
-    if(btnStop) {
-        btnStop.disabled = false;
-        btnStop.style.backgroundColor = '#ef4444'; // 빨간색 활성화
-        btnStop.style.opacity = '1';
-    }
-    if(inputAmount) {
-        inputAmount.disabled = true; // 금액 수정 금지
-        inputAmount.style.color = '#64748b'; // 입력창 글자색 회색으로
-    }
+
+    // 화면 잠금 요청
+    try { if(navigator.wakeLock) wakeLock = await navigator.wakeLock.request('screen'); } catch(e){}
+
+    // 버튼 및 입력창 제어
+    const btnS = document.getElementById('btn-start');
+    const btnT = document.getElementById('btn-stop');
+    const input = document.getElementById('bet-amount');
+
+    if(btnS) { btnS.disabled = true; btnS.style.background = '#334155'; btnS.style.opacity = '0.5'; }
+    if(btnT) { btnT.disabled = false; btnT.style.background = '#ef4444'; btnT.style.opacity = '1'; }
+    if(input) { input.disabled = true; input.style.color = '#64748b'; }
 
     const loop = () => {
         if(!isRunning) return;
-        
+
         const bet = Number(document.getElementById('bet-amount').value.replace(/,/g, '')) || 50000000;
-        const isWin = Math.random() < 0.6;
-        const percent = (Math.random() * 0.008) + 0.005;
-        const profit = isWin ? Math.floor(bet * percent) : -Math.floor(bet * 0.004);
+        const isWin = Math.random() < 0.58; // 실제 승률 타겟 약 58%
+        const percent = (Math.random() * 0.007) + 0.004;
+        const profit = isWin ? Math.floor(bet * percent) : -Math.floor(bet * (percent * 0.8));
         
+        // 데이터 누적
         totalProfit += profit;
         tradeCount++;
-        if(isWin) winCount++;
+        if(profit > 0) winCount++;
         totalCount += Math.floor(Math.random() * 300) + 100;
         
+        // 로그 기록 (추출용 데이터 포함)
         logs.unshift({
-            time: new Date().toLocaleTimeString('ko-KR', {hour12: false}).split(' ')[0],
+            time: new Date().toLocaleTimeString('ko-KR', {hour12: false}),
             type: Math.random() > 0.5 ? "AI 롱" : "AI 숏",
-            price: currentPrice + Math.floor(Math.random() * 1000 - 500),
-            profit: profit
+            price: currentPrice + Math.floor(Math.random() * 500),
+            profit: profit,
+            rawProfit: profit // 추출 시 숫자 계산용
         });
-        if(logs.length > 20) logs.pop();
+        if(logs.length > 50) logs.pop();
 
         // 화면 갱신
         if(document.getElementById('data-count')) document.getElementById('data-count').innerText = totalCount.toLocaleString();
-        if(document.getElementById('win-rate')) document.getElementById('win-rate').innerText = ((winCount/tradeCount)*100).toFixed(1) + "%";
-        if(document.getElementById('live-asset')) document.getElementById('live-asset').innerText = (bet + totalProfit).toLocaleString() + " KRW";
+        
+        // 승률 계산 (winCount / tradeCount)
+        if(document.getElementById('win-rate')) {
+            const rate = ((winCount / tradeCount) * 100).toFixed(1);
+            document.getElementById('win-rate').innerText = rate + "%";
+            document.getElementById('win-rate').style.color = rate >= 50 ? "#f59e0b" : "#94a3b8";
+        }
+        
+        if(document.getElementById('live-asset')) {
+            const asset = bet + totalProfit;
+            document.getElementById('live-asset').innerText = asset.toLocaleString() + " KRW";
+            document.getElementById('live-asset').style.color = totalProfit >= 0 ? '#3b82f6' : '#ef4444';
+        }
         
         const logList = document.getElementById('log-list');
         if(logList) {
             logList.innerHTML = logs.map(l => `
-                <tr>
-                    <td style="padding:12px; color:#94a3b8;">${l.time}</td>
+                <tr style="border-bottom:1px solid #1e293b;">
+                    <td style="padding:12px; color:#94a3b8; font-size:0.75rem;">${l.time}</td>
                     <td style="padding:12px; font-weight:bold; color:${l.type.includes('롱')?'#10b981':'#ef4444'}">${l.type}</td>
-                    <td style="padding:12px;">${l.price.toLocaleString()}</td>
-                    <td style="padding:12px; font-weight:bold; color:${l.profit>0?'#10b981':'#ef4444'}">${l.profit > 0 ? '+' : ''}${l.profit.toLocaleString()}</td>
+                    <td style="padding:12px; font-size:0.85rem;">${l.price.toLocaleString()}</td>
+                    <td style="padding:12px; font-weight:bold; color:${l.profit>0?'#10b981':'#ef4444'}">
+                        ${l.profit > 0 ? '+' : ''}${l.profit.toLocaleString()}
+                    </td>
                 </tr>
             `).join('');
         }
@@ -118,26 +114,37 @@ window.startAi = function() {
     loop();
 };
 
-// AI 중지 함수
+// [AI 중지]
 window.stopAi = function() {
     isRunning = false;
+    if(wakeLock) { wakeLock.release(); wakeLock = null; }
     
-    const btnStart = document.getElementById('btn-start');
-    const btnStop = document.getElementById('btn-stop');
-    const inputAmount = document.getElementById('bet-amount');
+    const btnS = document.getElementById('btn-start');
+    const btnT = document.getElementById('btn-stop');
+    const input = document.getElementById('bet-amount');
 
-    if(btnStart) {
-        btnStart.disabled = false;
-        btnStart.style.backgroundColor = '#3b82f6'; // 원래 파란색으로 복구
-        btnStart.style.opacity = '1';
-    }
-    if(btnStop) {
-        btnStop.disabled = true;
-        btnStop.style.backgroundColor = '#334155'; // 다시 비활성 색으로
-        btnStop.style.opacity = '0.5';
-    }
-    if(inputAmount) {
-        inputAmount.disabled = false; // 금액 수정 허용
-        inputAmount.style.color = '#fff'; // 글자색 복구
-    }
+    if(btnS) { btnS.disabled = false; btnS.style.background = '#3b82f6'; btnS.style.opacity = '1'; }
+    if(btnT) { btnT.disabled = true; btnT.style.background = '#334155'; btnT.style.opacity = '0.5'; }
+    if(input) { input.disabled = false; input.style.color = '#fff'; }
+};
+
+// [데이터 추출 - 무조건 되게 수정]
+window.downloadPlusLog = function() {
+    if(logs.length === 0) { alert("추출할 데이터가 없습니다."); return; }
+
+    // BOM 추가하여 한글 깨짐 방지
+    let csv = "\uFEFF시간,포지션,체결가,결과\n";
+    logs.forEach(l => {
+        csv += `${l.time},${l.type},${l.price},${l.profit}\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `AI_Trade_Log_${new Date().getTime()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
 };
