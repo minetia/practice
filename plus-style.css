@@ -1,34 +1,26 @@
-* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Pretendard', sans-serif; }
-body { background-color: #020617; color: #fff; padding-bottom: 80px; overflow-x: hidden; }
+/* practice/plus-style.css */
+:root { --bg-dark: #0f172a; --card-bg: #1e293b; --point-blue: #3b82f6; --win-green: #10b981; --lose-red: #ef4444; }
 
-/* 상단바: 로고 옆에 검색창 붙이기 */
-.top-nav { background: #0f172a; padding: 10px; border-bottom: 2px solid #3b82f6; display: flex; align-items: center; justify-content: space-between; gap: 10px; position: sticky; top: 0; z-index: 1001; }
-.logo { font-weight: bold; font-size: 0.9rem; white-space: nowrap; }
-.logo span { color: #3b82f6; font-size: 0.7rem; }
+body { background-color: #020617; color: #fff; margin: 0; padding-bottom: 80px; font-size: 14px; }
 
-.search-wrap { flex: 1; display: flex; background: #1e293b; border-radius: 6px; padding: 5px 10px; max-width: 150px; }
-.search-wrap input { background: transparent; border: none; color: #fff; width: 100%; outline: none; font-size: 0.8rem; }
+/* Neuro 스타일 카드 */
+.neuro-header { padding: 15px; display: flex; justify-content: space-between; align-items: center; background: #0f172a; border-top: 1px solid #334155; }
+.bot-name { font-weight: bold; font-size: 1.1rem; color: #f8fafc; }
+.status-badge { background: #334155; padding: 4px 10px; border-radius: 4px; font-size: 0.75rem; color: #94a3b8; }
 
-/* 차트 */
-#tv_chart { width: 100%; height: 260px; border-bottom: 1px solid #1e293b; }
+.asset-card { background: #1e293b; margin: 10px; padding: 15px; border-radius: 12px; border: 1px solid #334155; }
+.card-label { color: #94a3b8; font-size: 0.8rem; margin-bottom: 8px; display: block; }
+.card-input { background: #0f172a; border: 1px solid #334155; color: #fff; width: 100%; padding: 12px; border-radius: 8px; font-size: 1.1rem; font-weight: bold; outline: none; }
+.card-val-big { font-size: 1.3rem; font-weight: bold; color: var(--win-green); text-align: right; }
 
-/* 자산 카드 5:5 반반 */
-.asset-row { display: flex; padding: 10px; gap: 8px; }
-.asset-card { flex: 1; background: #0f172a; padding: 10px; border-radius: 8px; border: 1px solid #1e3a8a; border-left: 4px solid #3b82f6; }
-.asset-card.green { border-left-color: #10b981; }
-.card-label { font-size: 0.65rem; color: #94a3b8; margin-bottom: 4px; display: block; }
-.card-input { background: transparent; border: none; color: #fff; font-size: 1rem; font-weight: bold; width: 100%; outline: none; }
-.card-val { font-size: 1rem; font-weight: bold; color: #10b981; }
+/* 버튼 V6 스타일 */
+.btn-group-v6 { display: flex; gap: 10px; padding: 0 10px 15px; }
+.btn-v6 { flex: 1; padding: 15px; border-radius: 10px; border: none; font-weight: bold; font-size: 1.1rem; color: #fff; cursor: pointer; }
+.btn-v6.start { background: var(--win-green); box-shadow: 0 4px 0 #059669; }
+.btn-v6.stop { background: var(--lose-red); box-shadow: 0 4px 0 #dc2626; }
 
-/* 버튼 */
-.btn-row { display: flex; gap: 8px; padding: 0 10px 15px; }
-.btn-p { flex: 1; padding: 12px; border-radius: 6px; border: none; font-weight: bold; color: #fff; cursor: pointer; }
-
-/* 리스트 */
-.log-box { padding: 10px; }
-table { width: 100%; border-collapse: collapse; }
-th { padding: 8px; font-size: 0.7rem; color: #64748b; border-bottom: 2px solid #3b82f6; text-align: left; }
-td { padding: 12px 8px; font-size: 0.8rem; border-bottom: 1px solid #1e293b; }
-
-/* 하단 고정 메뉴 */
-#nav-placeholder { position: fixed; bottom: 0; width: 100%; height: 60px; background: #0f172a; border-top: 1px solid #1e3a8a; z-index: 1001; }
+/* 리스트 스타일 */
+.log-table-v6 { width: 100%; border-collapse: collapse; }
+.log-table-v6 th { padding: 10px; color: #64748b; font-size: 0.8rem; border-bottom: 1px solid #334155; }
+.log-table-v6 td { padding: 15px 10px; border-bottom: 1px solid #1e293b; font-weight: 500; }
+.mini-btn { background: #334155; color: #fff; border: none; padding: 5px 10px; border-radius: 4px; font-size: 0.7rem; margin-left: 5px; }
