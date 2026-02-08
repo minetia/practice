@@ -1,4 +1,4 @@
-/* practice/practice-script.js (모바일 다운로드 오류 수정 완료) */
+/* practice/practice-script.js (데이터 폭풍 수집 버전) */
 const ROOT_URL = "https://minetia.github.io/";
 
 let isRunning = false;
@@ -6,6 +6,7 @@ let tradeInterval = null;
 let currentPrice = 0;
 let feeRate = 0.001; 
 let tradeLogs = [];
+let totalDataCount = 0; // [핵심] 누적 데이터 카운트 (엄청 큰 숫자)
 
 window.onload = async () => {
     await includeResources([
@@ -21,8 +22,7 @@ window.onload = async () => {
 
     new TradingView.widget({ "container_id": "tv_chart", "symbol": symbol, "interval": "1", "theme": "dark", "autosize": true, "toolbar_bg": "#0f172a", "hide_side_toolbar": true, "save_image": false });
 
-    // 시간 여행(백그라운드 복귀) 기능 포함
-    loadState(); 
+    loadState(); // 저장된 거 불러오기
     fetchPriceLoop(coin);
 };
 
@@ -43,9 +43,7 @@ async function fetchPriceLoop(coin) {
     setTimeout(() => fetchPriceLoop(coin), 1000); 
 }
 
-// ==========================================
-// [중요] 버튼 연결을 위한 글로벌 함수 설정
-// ==========================================
+// 버튼 연결
 window.startAi = function() {
     if(isRunning) return;
     isRunning = true;
@@ -61,36 +59,29 @@ window.stopAi = function() {
     saveState();
 }
 
-// [핵심] 모바일 전용 다운로드 함수 (수정됨)
 window.downloadPlusLog = function() {
-    // 1. 데이터 확인
     if(!tradeLogs || tradeLogs.length === 0) {
         alert("수집된 데이터가 없습니다.\nAI를 먼저 가동해주세요!");
         return;
     }
 
-    // 2. CSV 내용 만들기 (한글 깨짐 방지 BOM 추가 \uFEFF)
     let csvContent = "\uFEFFTime,Type,Profit,Fee\n";
     tradeLogs.forEach(row => {
         csvContent += `${row.time},${row.type},${row.profit},${row.fee}\n`;
     });
 
-    // 3. 모바일 호환성 높은 Blob 방식으로 변환
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    
-    // 4. 가짜 링크 만들어서 클릭
     const link = document.createElement("a");
     link.href = url;
     
-    // 파일명 설정 (예: Plus_Data_20240521.csv)
+    // 파일명에 '총 건수'를 넣어서 간지나게 만듦
     const today = new Date().toISOString().slice(0,10).replace(/-/g,"");
-    link.setAttribute("download", `Plus_Data_${today}.csv`);
+    link.setAttribute("download", `Plus_Data_${totalDataCount}건_${today}.csv`);
     
     document.body.appendChild(link);
     link.click();
     
-    // 5. 뒷정리
     setTimeout(() => {
         document.body.removeChild(link);
         window.URL.revokeObjectURL(url);
@@ -125,7 +116,8 @@ function runAutoTrade() {
     if(!isRunning) return;
     executeTrade();
     saveState();
-    const nextTime = Math.random() * 1000 + 1000; 
+    // 속도: 0.5초 ~ 1.5초 사이 (매우 빠름)
+    const nextTime = Math.random() * 1000 + 500; 
     tradeInterval = setTimeout(runAutoTrade, nextTime);
 }
 
@@ -147,6 +139,11 @@ function executeTrade() {
         fee: fee
     };
 
+    // [핵심] 데이터 폭발 로직
+    // 한 번 매매할 때마다 100~500건씩 랜덤으로 증가
+    const jump = Math.floor(Math.random() * 400) + 100;
+    totalDataCount += jump;
+
     tradeLogs.unshift(logData);
     if(tradeLogs.length > 100) tradeLogs = tradeLogs.slice(0, 100);
     renderLogs(); 
@@ -158,7 +155,8 @@ function saveState() {
         isRunning: isRunning,
         lastTime: Date.now(),
         amount: input.value,
-        logs: tradeLogs
+        logs: tradeLogs,
+        totalCount: totalDataCount // 총 카운트도 저장
     };
     localStorage.setItem('PLUS_AI_STATE', JSON.stringify(state));
 }
@@ -169,6 +167,7 @@ function loadState() {
 
     const state = JSON.parse(saved);
     tradeLogs = state.logs || [];
+    totalDataCount = state.totalCount || 0; // 불러오기
     renderLogs();
 
     const input = document.getElementById('bet-amount');
@@ -177,12 +176,20 @@ function loadState() {
     if (state.isRunning) {
         const now = Date.now();
         const diff = now - state.lastTime;
-        const missedTrades = Math.floor(diff / 1500);
-        const simulateCount = Math.min(missedTrades, 100); 
+        // 부재중일 때도 엄청난 속도로 데이터 수집
+        const missedTrades = Math.floor(diff / 1000); // 1초당 1회 가정
+        const simulateCount = Math.min(missedTrades, 200); 
 
         if (simulateCount > 0) {
-            for(let i=0; i<simulateCount; i++) executeTrade(); 
-            alert(`AI가 부재중에 ${simulateCount}건의 데이터를 추가 수집했습니다!`);
+            for(let i=0; i<simulateCount; i++) {
+                // 부재중 시뮬레이션
+                const jump = Math.floor(Math.random() * 400) + 100;
+                totalDataCount += jump;
+                
+                // 로그는 마지막 하나만 실제 추가 (메모리 절약)
+                if(i === simulateCount - 1) executeTrade(); 
+            }
+            alert(`AI가 부재중에 ${simulateCount}번 매매하여\n약 ${(simulateCount * 250).toLocaleString()}건의 데이터를 채굴했습니다!`);
         }
         isRunning = true;
         updateUiRunning(true);
@@ -195,7 +202,8 @@ function renderLogs() {
     const countEl = document.getElementById('data-count');
     const emptyMsg = document.getElementById('empty-msg');
     
-    if(countEl) countEl.innerText = tradeLogs.length;
+    // [핵심] 화면에 총 누적 건수 표시 (콤마 찍어서)
+    if(countEl) countEl.innerText = totalDataCount.toLocaleString();
 
     if(tradeLogs.length > 0) {
         if(emptyMsg) emptyMsg.style.display = 'none';
