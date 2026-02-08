@@ -1,4 +1,4 @@
-/* practice/practice-script.js (최종 완성본) */
+/* practice/practice-script.js (백그라운드 방지 + 시간여행 기능) */
 const ROOT_URL = "https://minetia.github.io/";
 
 let isRunning = false;
@@ -8,7 +8,6 @@ let feeRate = 0.001;
 let tradeLogs = [];
 
 window.onload = async () => {
-    // 헤더, 네비 불러오기
     await includeResources([
         { id: 'header-placeholder', file: 'header.html' },
         { id: 'nav-placeholder', file: 'nav.html' }
@@ -22,7 +21,8 @@ window.onload = async () => {
 
     new TradingView.widget({ "container_id": "tv_chart", "symbol": symbol, "interval": "1", "theme": "dark", "autosize": true, "toolbar_bg": "#0f172a", "hide_side_toolbar": true, "save_image": false });
 
-    loadLogs(); 
+    // [핵심] 저장된 상태 불러오기 (시간 여행 시작)
+    loadState(); 
     fetchPriceLoop(coin);
 };
 
@@ -46,31 +46,46 @@ async function fetchPriceLoop(coin) {
 function startAi() {
     if(isRunning) return;
     isRunning = true;
-    document.getElementById('btn-start').disabled = true;
-    document.getElementById('btn-start').style.background = '#334155';
-    document.getElementById('btn-start').style.color = '#94a3b8';
-    document.getElementById('btn-stop').disabled = false;
-    document.getElementById('btn-stop').style.background = '#ef4444';
-    document.getElementById('btn-stop').style.color = '#fff';
-    document.getElementById('bet-amount').disabled = true;
+    updateUiRunning(true);
     runAutoTrade();
+    saveState(); // 상태 저장
 }
 
 function stopAi() {
     isRunning = false;
     clearTimeout(tradeInterval);
-    document.getElementById('btn-start').disabled = false;
-    document.getElementById('btn-start').style.background = '#3b82f6';
-    document.getElementById('btn-start').style.color = '#fff';
-    document.getElementById('btn-stop').disabled = true;
-    document.getElementById('btn-stop').style.background = '#334155';
-    document.getElementById('btn-stop').style.color = '#94a3b8';
-    document.getElementById('bet-amount').disabled = false;
+    updateUiRunning(false);
+    saveState(); // 상태 저장
+}
+
+function updateUiRunning(active) {
+    const btnStart = document.getElementById('btn-start');
+    const btnStop = document.getElementById('btn-stop');
+    const input = document.getElementById('bet-amount');
+
+    if(active) {
+        btnStart.disabled = true;
+        btnStart.style.background = '#334155';
+        btnStart.style.color = '#94a3b8';
+        btnStop.disabled = false;
+        btnStop.style.background = '#ef4444';
+        btnStop.style.color = '#fff';
+        input.disabled = true;
+    } else {
+        btnStart.disabled = false;
+        btnStart.style.background = '#3b82f6';
+        btnStart.style.color = '#fff';
+        btnStop.disabled = true;
+        btnStop.style.background = '#334155';
+        btnStop.style.color = '#94a3b8';
+        input.disabled = false;
+    }
 }
 
 function runAutoTrade() {
     if(!isRunning) return;
     executeTrade();
+    saveState(); // 매번 상태 저장
     const nextTime = Math.random() * 1000 + 1000; 
     tradeInterval = setTimeout(runAutoTrade, nextTime);
 }
@@ -94,20 +109,67 @@ function executeTrade() {
     };
 
     tradeLogs.unshift(logData);
-    saveLogs(); 
+    
+    // 로그는 100개까지만 유지 (메모리 보호)
+    if(tradeLogs.length > 100) tradeLogs = tradeLogs.slice(0, 100);
+    
     renderLogs(); 
 }
 
-function saveLogs() {
-    if(tradeLogs.length > 100) tradeLogs = tradeLogs.slice(0, 100);
-    localStorage.setItem('PLUS_LOGS', JSON.stringify(tradeLogs));
+// ==========================================
+// [핵심 기능] 상태 저장 및 시간 여행 (백그라운드 처리)
+// ==========================================
+
+function saveState() {
+    const input = document.getElementById('bet-amount');
+    const state = {
+        isRunning: isRunning,
+        lastTime: Date.now(), // 현재 시간 저장
+        amount: input.value,
+        logs: tradeLogs
+    };
+    localStorage.setItem('PLUS_AI_STATE', JSON.stringify(state));
 }
 
-function loadLogs() {
-    const saved = localStorage.getItem('PLUS_LOGS');
-    if(saved) tradeLogs = JSON.parse(saved);
+function loadState() {
+    const saved = localStorage.getItem('PLUS_AI_STATE');
+    if(!saved) return;
+
+    const state = JSON.parse(saved);
+    tradeLogs = state.logs || [];
     renderLogs();
+
+    const input = document.getElementById('bet-amount');
+    if(input) input.value = state.amount;
+
+    // 만약 꺼지기 전에 돌고 있었다면?
+    if (state.isRunning) {
+        // 1. 흐른 시간 계산
+        const now = Date.now();
+        const diff = now - state.lastTime; // 흐른 시간 (밀리초)
+        
+        // 2. 놓친 매매 횟수 계산 (평균 1.5초당 1회)
+        // 너무 많이 생성하면 렉 걸리니까 최대 100개까지만 시뮬레이션
+        const missedTrades = Math.floor(diff / 1500);
+        const simulateCount = Math.min(missedTrades, 100); 
+
+        if (simulateCount > 0) {
+            console.log(`[AI] 백그라운드에서 ${simulateCount}건 매매 처리`);
+            // 순식간에 매매 실행
+            for(let i=0; i<simulateCount; i++) {
+                executeTrade(); 
+            }
+            alert(`AI가 부재중에 ${simulateCount}건의 데이터를 추가 수집했습니다!`);
+        }
+
+        // 3. 다시 가동
+        isRunning = true;
+        updateUiRunning(true);
+        runAutoTrade();
+    }
 }
+
+// ==========================================
 
 function renderLogs() {
     const tbody = document.getElementById('log-list');
@@ -138,26 +200,20 @@ function renderLogs() {
     }
 }
 
-// [핵심] 다운로드 기능
 function downloadPlusLog() {
     if(tradeLogs.length === 0) {
         alert("수집된 데이터가 없습니다. AI를 가동해주세요.");
         return;
     }
-
     let csvContent = "data:text/csv;charset=utf-8,Time,Type,Profit,Fee\n";
     tradeLogs.forEach(row => {
         csvContent += `${row.time},${row.type},${row.profit},${row.fee}\n`;
     });
-
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    
-    // 파일명: Plus_Data_날짜.csv
     const today = new Date().toISOString().slice(0,10).replace(/-/g,"");
     link.setAttribute("download", `Plus_Data_${today}.csv`);
-    
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
