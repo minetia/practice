@@ -1,0 +1,42 @@
+<div class="neuro-header">
+    <span class="bot-name">Neuro-Bot V6.5</span>
+    <span class="status-badge" id="bot-status">대기중</span>
+</div>
+
+<div class="asset-grid">
+    <div class="asset-card">
+        <span class="card-label">초기 투자 원금 (KRW)</span>
+        <input type="text" id="bet-amount" class="card-input" value="50,000,000">
+    </div>
+    <div class="asset-card">
+        <span class="card-label">현재 평가 자산</span>
+        <div id="live-asset" class="card-val-big">50,000,000 KRW</div>
+    </div>
+</div>
+
+<div class="btn-group-v6">
+    <button onclick="startAi()" id="btn-start" class="btn-v6 start">▶ START</button>
+    <button onclick="stopAi()" id="btn-stop" class="btn-v6 stop" disabled>■ STOP</button>
+</div>
+
+<div class="log-section-v6">
+    <div class="log-top">
+        <span class="log-title">● 실시간 체결 로그</span>
+        <div class="log-btns">
+            <button onclick="downloadPlusLog()" class="mini-btn">매매일지 저장</button>
+            <button onclick="location.reload()" class="mini-btn red">초기화</button>
+        </div>
+    </div>
+    <table class="log-table-v6">
+        <thead>
+            <tr>
+                <th>시간</th>
+                <th>포지션</th>
+                <th>체결가</th>
+                <th style="text-align:right;">결과</th>
+            </tr>
+        </thead>
+        <tbody id="log-list">
+            </tbody>
+    </table>
+</div>
