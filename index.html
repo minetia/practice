@@ -10,31 +10,31 @@
 <body>
     <div id="header-placeholder"></div>
     
-    <div class="plus-top-nav">
-        <div class="search-box">
-            <input type="text" id="coin-search" placeholder="코인명 입력 (BTC, ETH...)">
-            <button onclick="searchCoin()" style="background:none; border:none; color:#3b82f6; font-weight:bold;">검색</button>
+    <div class="search-header">
+        <div class="search-input-group">
+            <input type="text" id="coin-search" placeholder="코인명 입력 (예: BTC, ETH)">
+            <button onclick="searchCoin()" style="background:none; border:none; color:#3b82f6; font-weight:bold; padding-left:10px;">검색</button>
         </div>
     </div>
 
     <div id="tv_chart"></div>
 
     <div class="info-grid">
-        <div class="info-item"><div class="info-label">코인명</div><div class="info-val" id="coin-name">BTC</div></div>
-        <div class="info-item"><div class="info-label">현재가</div><div class="info-val" id="current-price">-</div></div>
-        <div class="info-item"><div class="info-label">수집데이터</div><div class="info-val" id="data-count">0건</div></div>
-        <div class="info-item"><div class="info-label">승률</div><div class="info-val" id="win-rate" style="color:#f59e0b;">0.0%</div></div>
+        <div class="info-box"><div class="info-label">현재 코인</div><div class="info-val" id="coin-name">BTC</div></div>
+        <div class="info-box"><div class="info-label">현재 가격</div><div class="info-val" id="current-price">-</div></div>
+        <div class="info-box"><div class="info-label">수집데이터</div><div class="info-val" id="data-count">0건</div></div>
+        <div class="info-box"><div class="info-label">AI 승률</div><div class="info-val" id="win-rate" style="color:#f59e0b;">0.0%</div></div>
     </div>
 
     <div class="money-container">
         <div class="money-card">
-            <span class="money-label">AI 운용 자금 설정 (KRW)</span>
-            <input type="text" id="bet-amount" class="money-input" value="50,000,000">
+            <span class="m-label">AI 운용 자금 설정 (KRW)</span>
+            <input type="text" id="bet-amount" class="m-input" value="50,000,000">
         </div>
 
-        <div class="money-card" style="border-left-color: #10b981;">
-            <span class="money-label">실시간 평가 자산 (KRW)</span>
-            <div id="live-asset" class="money-val">50,000,000</div>
+        <div class="money-card result">
+            <span class="m-label">실시간 평가 자산 (KRW)</span>
+            <div id="live-asset" class="m-val">50,000,000</div>
         </div>
     </div>
 
@@ -44,9 +44,9 @@
     </div>
 
     <div class="log-section">
-        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+        <div style="display:flex; justify-content:space-between; margin-bottom:10px; padding:0 5px;">
             <b style="font-size:0.9rem;">마이닝 로그</b>
-            <span onclick="downloadPlusLog()" style="font-size:0.7rem; color:#64748b; cursor:pointer;">[데이터 추출]</span>
+            <span onclick="downloadPlusLog()" style="font-size:0.7rem; color:#64748b; cursor:pointer; text-decoration:underline;">[데이터 추출]</span>
         </div>
         <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
             <thead style="border-bottom:2px solid #1e3a8a; color:#64748b;">
