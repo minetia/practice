@@ -5,47 +5,53 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AI QUANT PLUS</title>
     <link rel="stylesheet" href="plus-style.css">
-    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
 </head>
 <body>
     <div id="header-placeholder"></div>
     
-    <div class="plus-header">
-        <span>AI QUANT <span style="color:#93c5fd;">PLUS+</span></span>
-        <span style="font-size:0.7rem; background:#1e40af; padding:2px 6px; border-radius:4px;">MINING MODE</span>
+    <div class="plus-top-nav">
+        <div class="search-box">
+            <input type="text" id="coin-search" placeholder="코인명 입력 (BTC, ETH...)">
+            <button onclick="searchCoin()" style="background:none; border:none; color:#3b82f6; font-weight:bold;">검색</button>
+        </div>
     </div>
 
     <div id="tv_chart"></div>
 
-    <div class="info-container">
-        <div class="info-box"><div class="info-label">코인명</div><div class="info-val" id="coin-name">BTC</div></div>
-        <div class="info-box"><div class="info-label">현재가</div><div class="info-val" id="current-price">-</div></div>
-        <div class="info-box"><div class="info-label">수집데이터</div><div class="info-val" id="data-count">0건</div></div>
-        <div class="info-box"><div class="info-label">AI 승률</div><div class="info-val" id="win-rate" style="color:#f59e0b;">0.0%</div></div>
+    <div class="info-grid">
+        <div class="info-item"><div class="info-label">코인명</div><div class="info-val" id="coin-name">BTC</div></div>
+        <div class="info-item"><div class="info-label">현재가</div><div class="info-val" id="current-price">-</div></div>
+        <div class="info-item"><div class="info-label">수집데이터</div><div class="info-val" id="data-count">0건</div></div>
+        <div class="info-item"><div class="info-label">승률</div><div class="info-val" id="win-rate" style="color:#f59e0b;">0.0%</div></div>
     </div>
 
-    <div class="control-section">
-        <div class="asset-card">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                <span style="font-size:0.8rem; color:#94a3b8;">평가 자산 (KRW)</span>
-                <input type="text" id="bet-amount" value="50,000,000" style="background:transparent; border:none; color:#fff; text-align:right; font-weight:bold; width:120px; outline:none;">
-            </div>
-            <div id="live-asset" style="font-size:1.3rem; font-weight:bold; color:#3b82f6;">50,000,000</div>
+    <div class="money-container">
+        <div class="money-card">
+            <span class="money-label">AI 운용 자금 설정 (KRW)</span>
+            <input type="text" id="bet-amount" class="money-input" value="50,000,000">
         </div>
-        <div class="btn-group">
-            <button onclick="startAi()" id="btn-start" class="btn" style="background:#3b82f6;">AI 마이닝 시작</button>
-            <button onclick="stopAi()" id="btn-stop" class="btn" style="background:#334155;" disabled>중지</button>
+
+        <div class="money-card" style="border-left-color: #10b981;">
+            <span class="money-label">실시간 평가 자산 (KRW)</span>
+            <div id="live-asset" class="money-val">50,000,000</div>
         </div>
+    </div>
+
+    <div class="btn-group">
+        <button onclick="startAi()" id="btn-start" class="btn" style="background:#3b82f6;">AI 마이닝 시작</button>
+        <button onclick="stopAi()" id="btn-stop" class="btn" style="background:#334155;" disabled>중지</button>
     </div>
 
     <div class="log-section">
-        <div class="log-header">
-            <b style="font-size:0.9rem;">실시간 매매일지</b>
-            <span onclick="downloadPlusLog()" style="font-size:0.75rem; color:#64748b; text-decoration:underline; cursor:pointer;">데이터 추출</span>
+        <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+            <b style="font-size:0.9rem;">마이닝 로그</b>
+            <span onclick="downloadPlusLog()" style="font-size:0.7rem; color:#64748b; cursor:pointer;">[데이터 추출]</span>
         </div>
-        <table>
-            <thead><tr><th>시간</th><th>포지션</th><th>체결가</th><th style="text-align:right;">수익</th></tr></thead>
+        <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
+            <thead style="border-bottom:2px solid #1e3a8a; color:#64748b;">
+                <tr><th style="padding:10px; text-align:left;">시간</th><th style="text-align:left;">포지션</th><th style="text-align:right;">수익</th></tr>
+            </thead>
             <tbody id="log-list"></tbody>
         </table>
     </div>
