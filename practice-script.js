@@ -1,4 +1,4 @@
-/* practice/practice-script.js (자산 평가 기능 추가됨) */
+/* practice/practice-script.js (검색 기능 추가 완료) */
 const ROOT_URL = "https://minetia.github.io/";
 
 let isRunning = false;
@@ -7,22 +7,36 @@ let currentPrice = 0;
 let feeRate = 0.001; 
 let tradeLogs = [];
 let totalDataCount = 0; 
-let totalProfit = 0; // [핵심] 누적 수익금 저장 변수
+let totalProfit = 0;
 
 window.onload = async () => {
+    // 1. 헤더/네비 불러오기
     await includeResources([
         { id: 'header-placeholder', file: 'header.html' },
         { id: 'nav-placeholder', file: 'nav.html' }
     ]);
+
+    // 2. URL에서 코인 정보 읽기
     const params = new URLSearchParams(window.location.search);
     const coin = params.get('coin') || 'BTC';
     const symbol = params.get('symbol') || 'BINANCE:BTCUSDT';
     
+    // 3. 화면 세팅
     document.getElementById('coin-name').innerText = coin;
     if(symbol.includes('USDT')) feeRate = 0.002;
 
+    // 4. 차트 로드
     new TradingView.widget({ "container_id": "tv_chart", "symbol": symbol, "interval": "1", "theme": "dark", "autosize": true, "toolbar_bg": "#0f172a", "hide_side_toolbar": true, "save_image": false });
 
+    // 5. [NEW] 검색창 엔터키 연결 (헤더가 로드된 후 실행)
+    const searchInput = document.getElementById('header-search-input');
+    if(searchInput) {
+        searchInput.onkeyup = function(e) {
+            if(e.key === 'Enter') searchCoin();
+        };
+    }
+
+    // 6. 데이터 로드 및 가격 루프 시작
     loadState(); 
     fetchPriceLoop(coin);
 };
@@ -44,7 +58,25 @@ async function fetchPriceLoop(coin) {
     setTimeout(() => fetchPriceLoop(coin), 1000); 
 }
 
-// 버튼 연결
+// ==========================================
+// [NEW] 코인 검색 기능 (이게 빠져있었습니다!)
+// ==========================================
+window.searchCoin = function() {
+    const input = document.getElementById('header-search-input');
+    if (!input) return;
+    
+    let symbol = input.value.toUpperCase().trim();
+    if (!symbol) { 
+        alert("코인명(예: BTC, ETH)을 입력해주세요."); 
+        return; 
+    }
+    
+    // 현재 페이지(practice)에서 코인만 바꿔서 새로고침
+    // 주소 뒤에 ?symbol=...&coin=... 을 붙여서 이동
+    location.href = `?symbol=BINANCE:${symbol}USDT&coin=${symbol}`;
+}
+
+// 버튼 연결 함수들
 window.startAi = function() {
     if(isRunning) return;
     isRunning = true;
@@ -131,8 +163,7 @@ function executeTrade() {
     if(isWin) profit = Math.floor(betAmount * percent) - fee;
     else profit = -Math.floor(betAmount * (percent * 0.6)) - fee;
 
-    // [핵심] 누적 수익금에 추가
-    totalProfit += profit;
+    totalProfit += profit; // 누적 수익
 
     const logData = {
         time: new Date().toTimeString().split(' ')[0],
@@ -148,10 +179,9 @@ function executeTrade() {
     if(tradeLogs.length > 100) tradeLogs = tradeLogs.slice(0, 100);
     
     renderLogs(); 
-    updateAssetDisplay(); // 자산 표시 업데이트
+    updateAssetDisplay(); 
 }
 
-// [NEW] 평가 자산 UI 업데이트 함수
 function updateAssetDisplay() {
     const input = document.getElementById('bet-amount');
     const principal = Number(input.value.replace(/,/g, '')) || 50000000;
@@ -160,7 +190,6 @@ function updateAssetDisplay() {
     
     if(assetEl) {
         assetEl.innerText = `${currentAsset.toLocaleString()} KRW`;
-        // 수익이면 파란색(Plus 테마색), 손실이면 빨간색
         assetEl.style.color = totalProfit >= 0 ? '#3b82f6' : '#ef4444';
     }
 }
@@ -173,7 +202,7 @@ function saveState() {
         amount: input.value,
         logs: tradeLogs,
         totalCount: totalDataCount,
-        totalProfit: totalProfit // 수익금도 저장
+        totalProfit: totalProfit 
     };
     localStorage.setItem('PLUS_AI_STATE', JSON.stringify(state));
 }
@@ -185,14 +214,13 @@ function loadState() {
     const state = JSON.parse(saved);
     tradeLogs = state.logs || [];
     totalDataCount = state.totalCount || 0;
-    totalProfit = state.totalProfit || 0; // 불러오기
+    totalProfit = state.totalProfit || 0; 
     
     renderLogs();
     
     const input = document.getElementById('bet-amount');
     if(input) input.value = state.amount;
     
-    // 로드 후 자산 즉시 갱신
     updateAssetDisplay();
 
     if (state.isRunning) {
@@ -205,7 +233,6 @@ function loadState() {
             for(let i=0; i<simulateCount; i++) {
                 const jump = Math.floor(Math.random() * 400) + 100;
                 totalDataCount += jump;
-                // 부재중 시뮬레이션에서도 수익 계산
                 if(i === simulateCount - 1) executeTrade(); 
             }
             alert(`AI가 부재중에 ${simulateCount}번 매매하여\n약 ${(simulateCount * 250).toLocaleString()}건의 데이터를 채굴했습니다!`);
@@ -249,5 +276,5 @@ window.formatInput = function(input) {
     let val = input.value.replace(/[^0-9]/g, '');
     if(!val) return;
     input.value = Number(val).toLocaleString();
-    updateAssetDisplay(); // 입력값 바뀔 때도 자산 갱신
+    updateAssetDisplay(); 
 }
