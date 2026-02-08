@@ -1,4 +1,4 @@
-/* practice/practice-script.js (검색 기능 추가 완료) */
+/* practice/practice-script.js (체결가 + 일반모드 UI 적용) */
 const ROOT_URL = "https://minetia.github.io/";
 
 let isRunning = false;
@@ -10,33 +10,24 @@ let totalDataCount = 0;
 let totalProfit = 0;
 
 window.onload = async () => {
-    // 1. 헤더/네비 불러오기
     await includeResources([
         { id: 'header-placeholder', file: 'header.html' },
         { id: 'nav-placeholder', file: 'nav.html' }
     ]);
-
-    // 2. URL에서 코인 정보 읽기
     const params = new URLSearchParams(window.location.search);
     const coin = params.get('coin') || 'BTC';
     const symbol = params.get('symbol') || 'BINANCE:BTCUSDT';
     
-    // 3. 화면 세팅
     document.getElementById('coin-name').innerText = coin;
     if(symbol.includes('USDT')) feeRate = 0.002;
 
-    // 4. 차트 로드
     new TradingView.widget({ "container_id": "tv_chart", "symbol": symbol, "interval": "1", "theme": "dark", "autosize": true, "toolbar_bg": "#0f172a", "hide_side_toolbar": true, "save_image": false });
 
-    // 5. [NEW] 검색창 엔터키 연결 (헤더가 로드된 후 실행)
     const searchInput = document.getElementById('header-search-input');
     if(searchInput) {
-        searchInput.onkeyup = function(e) {
-            if(e.key === 'Enter') searchCoin();
-        };
+        searchInput.onkeyup = function(e) { if(e.key === 'Enter') searchCoin(); };
     }
 
-    // 6. 데이터 로드 및 가격 루프 시작
     loadState(); 
     fetchPriceLoop(coin);
 };
@@ -58,25 +49,14 @@ async function fetchPriceLoop(coin) {
     setTimeout(() => fetchPriceLoop(coin), 1000); 
 }
 
-// ==========================================
-// [NEW] 코인 검색 기능 (이게 빠져있었습니다!)
-// ==========================================
 window.searchCoin = function() {
     const input = document.getElementById('header-search-input');
     if (!input) return;
-    
     let symbol = input.value.toUpperCase().trim();
-    if (!symbol) { 
-        alert("코인명(예: BTC, ETH)을 입력해주세요."); 
-        return; 
-    }
-    
-    // 현재 페이지(practice)에서 코인만 바꿔서 새로고침
-    // 주소 뒤에 ?symbol=...&coin=... 을 붙여서 이동
+    if (!symbol) { alert("코인명을 입력해주세요."); return; }
     location.href = `?symbol=BINANCE:${symbol}USDT&coin=${symbol}`;
 }
 
-// 버튼 연결 함수들
 window.startAi = function() {
     if(isRunning) return;
     isRunning = true;
@@ -97,49 +77,32 @@ window.downloadPlusLog = function() {
         alert("수집된 데이터가 없습니다.\nAI를 먼저 가동해주세요!");
         return;
     }
-
-    let csvContent = "\uFEFFTime,Type,Profit,Fee\n";
+    let csvContent = "\uFEFFTime,Type,Price,Profit,Fee\n";
     tradeLogs.forEach(row => {
-        csvContent += `${row.time},${row.type},${row.profit},${row.fee}\n`;
+        csvContent += `${row.time},${row.type},${row.price},${row.profit},${row.fee}\n`;
     });
-
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    
     const today = new Date().toISOString().slice(0,10).replace(/-/g,"");
     link.setAttribute("download", `Plus_Data_${totalDataCount}건_${today}.csv`);
-    
     document.body.appendChild(link);
     link.click();
-    
-    setTimeout(() => {
-        document.body.removeChild(link);
-        window.URL.revokeObjectURL(url);
-    }, 100);
+    setTimeout(() => { document.body.removeChild(link); window.URL.revokeObjectURL(url); }, 100);
 }
 
 function updateUiRunning(active) {
     const btnStart = document.getElementById('btn-start');
     const btnStop = document.getElementById('btn-stop');
     const input = document.getElementById('bet-amount');
-
     if(active) {
-        btnStart.disabled = true;
-        btnStart.style.background = '#334155';
-        btnStart.style.color = '#94a3b8';
-        btnStop.disabled = false;
-        btnStop.style.background = '#ef4444';
-        btnStop.style.color = '#fff';
+        btnStart.disabled = true; btnStart.style.background = '#334155'; btnStart.style.color = '#94a3b8';
+        btnStop.disabled = false; btnStop.style.background = '#ef4444'; btnStop.style.color = '#fff';
         input.disabled = true;
     } else {
-        btnStart.disabled = false;
-        btnStart.style.background = '#3b82f6';
-        btnStart.style.color = '#fff';
-        btnStop.disabled = true;
-        btnStop.style.background = '#334155';
-        btnStop.style.color = '#94a3b8';
+        btnStart.disabled = false; btnStart.style.background = '#3b82f6'; btnStart.style.color = '#fff';
+        btnStop.disabled = true; btnStop.style.background = '#334155'; btnStop.style.color = '#94a3b8';
         input.disabled = false;
     }
 }
@@ -163,13 +126,19 @@ function executeTrade() {
     if(isWin) profit = Math.floor(betAmount * percent) - fee;
     else profit = -Math.floor(betAmount * (percent * 0.6)) - fee;
 
-    totalProfit += profit; // 누적 수익
+    totalProfit += profit;
+
+    // [핵심] 체결가 생성 (현재가에서 약간 변동)
+    const variation = currentPrice * 0.0005; 
+    const tradePrice = Math.floor(currentPrice + (Math.random() * variation * 2 - variation));
 
     const logData = {
         time: new Date().toTimeString().split(' ')[0],
         type: Math.random() > 0.5 ? "AI 롱" : "AI 숏",
+        price: tradePrice, // 체결가 저장
         profit: profit,
-        fee: fee
+        fee: fee,
+        percent: isWin ? percent : -percent
     };
 
     const jump = Math.floor(Math.random() * 400) + 100;
@@ -187,7 +156,6 @@ function updateAssetDisplay() {
     const principal = Number(input.value.replace(/,/g, '')) || 50000000;
     const currentAsset = principal + totalProfit;
     const assetEl = document.getElementById('live-asset');
-    
     if(assetEl) {
         assetEl.innerText = `${currentAsset.toLocaleString()} KRW`;
         assetEl.style.color = totalProfit >= 0 ? '#3b82f6' : '#ef4444';
@@ -210,17 +178,14 @@ function saveState() {
 function loadState() {
     const saved = localStorage.getItem('PLUS_AI_STATE');
     if(!saved) return;
-
     const state = JSON.parse(saved);
     tradeLogs = state.logs || [];
     totalDataCount = state.totalCount || 0;
     totalProfit = state.totalProfit || 0; 
-    
     renderLogs();
     
     const input = document.getElementById('bet-amount');
     if(input) input.value = state.amount;
-    
     updateAssetDisplay();
 
     if (state.isRunning) {
@@ -259,11 +224,20 @@ function renderLogs() {
             const color = log.profit >= 0 ? '#10b981' : '#ef4444';
             const sign = log.profit >= 0 ? '+' : '';
             
+            // [핵심] 일반 모드와 똑같은 디자인으로 변경!
+            // 3번째 칸: 체결가
+            // 4번째 칸: 수익금 + 수익률 + 수수료(회색)
+            const resultHTML = `
+                <div>${sign}${log.profit.toLocaleString()}</div>
+                <div style="font-size:0.7rem; opacity:0.8; font-weight:normal;">(${sign}${(Math.abs(log.percent)*100).toFixed(2)}%)</div>
+                <div style="font-size:0.6rem; color:#64748b; margin-top:2px;">수수료: -${log.fee.toLocaleString()}</div>
+            `;
+
             row.innerHTML = `
-                <td style="color:#94a3b8;">${log.time}</td>
-                <td style="font-weight:bold;">${log.type}</td>
-                <td style="color:${color}; font-weight:bold;">${sign}${log.profit.toLocaleString()}</td>
-                <td style="color:#64748b; font-size:0.75rem;">-${log.fee.toLocaleString()}</td>
+                <td style="color:#94a3b8; text-align:center; padding:12px;">${log.time}</td>
+                <td style="font-weight:bold; color:${log.type.includes('롱')?'#10b981':'#ef4444'}; text-align:center; padding:12px;">${log.type}</td>
+                <td style="color:#fff; font-weight:bold; text-align:center; padding:12px;">${log.price.toLocaleString()}</td>
+                <td style="color:${color}; font-weight:bold; text-align:center; padding:12px;">${resultHTML}</td>
             `;
             tbody.appendChild(row);
         });
