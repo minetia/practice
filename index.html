@@ -6,14 +6,18 @@
     <title>AI QUANT PLUS</title>
     <link rel="stylesheet" href="plus-style.css">
     <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    <style>
+        /* [중요] 상단 공통 헤더의 검색창을 플러스 모드에서만 강제로 숨김 */
+        #header-placeholder input, #header-placeholder button[onclick*="search"] { display: none !important; }
+    </style>
 </head>
 <body>
     <div id="header-placeholder"></div>
     
-    <div class="search-header">
-        <div class="search-input-group">
-            <input type="text" id="coin-search" placeholder="코인명 입력 (예: BTC, ETH)">
-            <button onclick="searchCoin()" style="background:none; border:none; color:#3b82f6; font-weight:bold; padding-left:10px;">검색</button>
+    <div class="plus-search-header">
+        <div class="search-wrapper">
+            <input type="text" id="plus-coin-search" placeholder="코인명 입력 (예: BTC, ETH)">
+            <button onclick="plusSearch()" style="background:none; border:none; color:#3b82f6; font-weight:bold; padding-left:10px;">검색</button>
         </div>
     </div>
 
@@ -26,13 +30,13 @@
         <div class="info-box"><div class="info-label">AI 승률</div><div class="info-val" id="win-rate" style="color:#f59e0b;">0.0%</div></div>
     </div>
 
-    <div class="money-container">
-        <div class="money-card">
+    <div class="money-card-section">
+        <div class="m-card">
             <span class="m-label">AI 운용 자금 설정 (KRW)</span>
             <input type="text" id="bet-amount" class="m-input" value="50,000,000">
         </div>
 
-        <div class="money-card result">
+        <div class="m-card green-point">
             <span class="m-label">실시간 평가 자산 (KRW)</span>
             <div id="live-asset" class="m-val">50,000,000</div>
         </div>
@@ -44,8 +48,8 @@
     </div>
 
     <div class="log-section">
-        <div style="display:flex; justify-content:space-between; margin-bottom:10px; padding:0 5px;">
-            <b style="font-size:0.9rem;">마이닝 로그</b>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; padding:0 5px;">
+            <b style="font-size:0.9rem;">AI 매매 로그</b>
             <span onclick="downloadPlusLog()" style="font-size:0.7rem; color:#64748b; cursor:pointer; text-decoration:underline;">[데이터 추출]</span>
         </div>
         <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
